@@ -1,9 +1,9 @@
 const fs = require('fs');
 const path = require('path');
-
+const Database = require('better-sqlite3');
 // Replace './your-database-folder' with the folder name you are using in your connection string
 // For example, if your database path is 'data/database.db', use 'data' here
-const dbDir = path.dirname(path.join(__dirname, 'data/database.db')); 
+const dbDir = path.dirname(dbPath);
 
 if (!fs.existsSync(dbDir)){
     fs.mkdirSync(dbDir, { recursive: true });
@@ -11,13 +11,17 @@ if (!fs.existsSync(dbDir)){
 
 // db.js — SQLite data layer for BioPacq.
 // All persistent state lives in ./data/biopacq.db (created automatically on first run).
+const dbPath = path.resolve(__dirname, 'data/database.db'); 
 
-
+if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+    console.log(`Successfully created database directory at: ${dbDir}`);
+}
 const path = require("path");
 const Database = require("better-sqlite3");
 
 const DB_PATH = path.join(__dirname, "data", "biopacq.db");
-const db = new Database(DB_PATH);
+const db = new Database(dbPath, { verbose: console.log });
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
 
