@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>BioPacq — Order Online</title>
+<meta name="theme-color" content="#1E3523" />
+<link rel="manifest" href="customer-manifest.json" />
+<link rel="apple-touch-icon" href="icons/customer-192.png" />
+<link rel="icon" href="icons/customer-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+  :root {
+    --forest:#1E3523; --forest-2:#16281A; --forest-tint:#3C5A44;
+    --cream:#EFECE1; --paper:#F8F6EF; --cream-line:#DCD6C2;
+    --gold:#AD8A50; --gold-deep:#8C6D3A; --rust:#9B4A34; --rust-tint:#F1DED5;
+    --ok:#43684A; --ok-tint:#DCE7DA; --ink:#1E3523; --ink-soft:#5B6B5D;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'Inter',ui-sans-serif,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior-y:contain;}
+  .font-display{font-family:'Fraunces',serif;}
+  .nums{font-variant-numeric:tabular-nums;}
+  ::-webkit-scrollbar{width:0;height:0;}
+
+  header.top{position:sticky;top:0;z-index:20;background:var(--forest);color:var(--paper);
+    padding:calc(14px + env(safe-area-inset-top,0px)) 16px 14px;display:flex;align-items:center;justify-content:space-between;
+    box-shadow:0 2px 10px rgba(0,0,0,.15);}
+  header.top .brand{display:flex;align-items:center;gap:10px;}
+  header.top .hex{width:30px;height:30px;background:var(--gold);clip-path:polygon(25% 6%,75% 6%,100% 50%,75% 94%,25% 94%,0% 50%);}
+  header.top h1{font-family:'Fraunces',serif;font-size:19px;margin:0;font-weight:600;}
+  header.top .sub{font-size:11px;color:var(--cream-line);opacity:.85;}
+  .cart-btn{position:relative;background:var(--forest-tint);border:none;color:var(--paper);padding:9px 14px;border-radius:999px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px;}
+  .cart-badge{position:absolute;top:-6px;right:-6px;background:var(--gold);color:var(--forest-2);font-size:11px;font-weight:800;border-radius:999px;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;padding:0 4px;}
+
+  main{max-width:640px;margin:0 auto;padding:16px 14px 100px;}
+
+  .tabs{display:flex;gap:6px;background:var(--paper);border:1px solid var(--cream-line);border-radius:999px;padding:4px;margin-bottom:16px;}
+  .tab{flex:1;text-align:center;padding:9px 8px;border-radius:999px;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer;}
+  .tab.active{background:var(--forest);color:var(--paper);}
+
+  .panel{display:none;} .panel.active{display:block;}
+
+  .id-card{background:var(--paper);border:1px solid var(--cream-line);border-radius:16px;padding:16px;margin-bottom:16px;}
+  .id-card h2{font-family:'Fraunces',serif;font-size:16px;margin:0 0 10px;}
+  .id-card input{width:100%;padding:11px 12px;border:1px solid var(--cream-line);border-radius:10px;font-size:14px;margin-bottom:10px;background:#fff;color:var(--ink);}
+  .id-card .row{display:flex;gap:8px;}
+  .btn{border:none;border-radius:10px;padding:11px 16px;font-weight:700;font-size:14px;cursor:pointer;}
+  .btn-primary{background:var(--forest);color:var(--paper);}
+  .btn-primary:disabled{opacity:.5;}
+  .btn-ghost{background:transparent;color:var(--forest);border:1px solid var(--forest-tint);}
+  .who{display:flex;align-items:center;justify-content:space-between;background:var(--ok-tint);border:1px solid var(--ok);color:var(--forest-2);border-radius:12px;padding:10px 14px;margin-bottom:16px;font-size:13px;font-weight:600;}
+  .who button{background:none;border:none;color:var(--rust);font-weight:700;font-size:12px;text-decoration:underline;}
+
+  .product{background:var(--paper);border:1px solid var(--cream-line);border-radius:16px;padding:14px;margin-bottom:12px;display:flex;justify-content:space-between;gap:12px;align-items:center;}
+  .product .name{font-weight:700;font-size:15px;}
+  .product .meta{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .product .price{font-family:'Fraunces',serif;font-weight:600;font-size:16px;color:var(--gold-deep);margin-top:4px;}
+  .stepper{display:flex;align-items:center;gap:0;border:1px solid var(--cream-line);border-radius:999px;overflow:hidden;background:#fff;}
+  .stepper button{width:32px;height:32px;border:none;background:#fff;font-size:16px;font-weight:700;color:var(--forest);}
+  .stepper span{min-width:28px;text-align:center;font-weight:700;font-size:13px;}
+  .stepper button:disabled{opacity:.3;}
+
+  .cart-drawer{position:fixed;inset:0;background:rgba(20,30,20,.45);z-index:40;display:none;}
+  .cart-drawer.open{display:block;}
+  .cart-sheet{position:absolute;bottom:0;left:0;right:0;background:var(--paper);border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:82vh;overflow:auto;}
+  .cart-line{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--cream-line);}
+  .cart-line .n{font-weight:600;font-size:14px;}
+  .cart-line .p{font-size:12px;color:var(--ink-soft);}
+  .cart-total{display:flex;justify-content:space-between;font-family:'Fraunces',serif;font-size:19px;font-weight:700;margin:14px 0;}
+  .pay-option{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--cream-line);border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer;}
+  .pay-option.selected{border-color:var(--forest);background:#fff;box-shadow:0 0 0 2px var(--forest-tint) inset;}
+  .pay-option strong{font-size:14px;} .pay-option p{margin:2px 0 0;font-size:12px;color:var(--ink-soft);}
+
+  .order-card{background:var(--paper);border:1px solid var(--cream-line);border-radius:16px;padding:16px;margin-bottom:14px;}
+  .order-card .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .order-card .oid{font-size:11px;color:var(--ink-soft);}
+  .badge{font-size:11px;font-weight:800;border-radius:999px;padding:4px 10px;}
+  .b-pending{background:#FBEFD8;color:#8C6D3A;} .b-accepted,.b-preparing,.b-ready,.b-out_for_delivery{background:var(--ok-tint);color:var(--ok);}
+  .b-delivered{background:var(--forest);color:#fff;} .b-rejected,.b-expired,.b-cancelled{background:var(--rust-tint);color:var(--rust);}
+  .countdown{font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--rust);text-align:center;margin:8px 0;}
+  .progress{display:flex;gap:4px;margin:10px 0;}
+  .progress div{flex:1;height:6px;border-radius:4px;background:var(--cream-line);}
+  .progress div.done{background:var(--ok);}
+  .empty{text-align:center;padding:40px 20px;color:var(--ink-soft);}
+  .empty .hex{width:52px;height:52px;background:var(--gold);opacity:.25;clip-path:polygon(25% 6%,75% 6%,100% 50%,75% 94%,25% 94%,0% 50%);margin:0 auto 14px;}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--forest-2);color:#fff;padding:12px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:80;box-shadow:0 8px 24px rgba(0,0,0,.25);}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="hex"></div>
+    <div><h1>BioPacq</h1><div class="sub">Order fresh stock, live</div></div>
+  </div>
+  <button class="cart-btn" id="openCartBtn">🛒 Cart<span class="cart-badge" id="cartBadge" style="display:none;">0</span></button>
+</header>
+
+<main>
+  <div class="tabs">
+    <div class="tab active" data-tab="shop">Shop</div>
+    <div class="tab" data-tab="orders">My Orders</div>
+  </div>
+
+  <!-- SHOP -->
+  <div class="panel active" id="panel-shop">
+    <div id="idCard" class="id-card">
+      <h2>Who's ordering?</h2>
+      <input id="idPhone" placeholder="Your phone number" inputmode="tel" />
+      <div id="idNameWrap" style="display:none;">
+        <input id="idName" placeholder="Business / your name" />
+      </div>
+      <div class="row">
+        <button class="btn btn-primary" id="idContinueBtn" style="flex:1;">Continue</button>
+      </div>
+    </div>
+    <div id="whoBar" class="who" style="display:none;">
+      <span id="whoText"></span>
+      <button id="switchUserBtn">Not you? Switch</button>
+    </div>
+    <div id="productList"></div>
+  </div>
+
+  <!-- ORDERS -->
+  <div class="panel" id="panel-orders">
+    <div id="ordersList"><div class="empty"><div class="hex"></div>Sign in on the Shop tab to see your orders.</div></div>
+  </div>
+</main>
+
+<!-- CART DRAWER -->
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-sheet">
+    <h2 class="font-display" style="margin:0 0 12px;font-size:19px;">Your Cart</h2>
+    <div id="cartLines"></div>
+    <div class="cart-total"><span>Total</span><span id="cartTotal" class="nums">₹0</span></div>
+
+    <div id="payOptions"></div>
+
+    <div id="cartError" style="color:var(--rust);font-size:13px;margin-bottom:8px;display:none;"></div>
+    <div class="row" style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" id="closeCartBtn" style="flex:1;">Keep shopping</button>
+      <button class="btn btn-primary" id="placeOrderBtn" style="flex:1;">Place Order</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = { get:(u)=>fetch(u).then(r=>r.json()), post:(u,b)=>fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b||{})}).then(async r=>({status:r.status,data:await r.json()})), put:(u,b)=>fetch(u,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(b||{})}).then(async r=>({status:r.status,data:await r.json()})) };
+
+  let state = { products:[], customers:[], orders:[] };
+  let config = { razorpayEnabled:false, acceptWindowMinutes:10 };
+  let me = JSON.parse(localStorage.getItem("biopacq_customer") || "null"); // {id,name,phone}
+  let cart = {}; // productId -> qty
+  let payMethod = "credit";
+
+  function toast(msg){
+    const t=document.createElement("div"); t.className="toast"; t.textContent=msg;
+    document.body.appendChild(t); setTimeout(()=>t.remove(),2600);
+  }
+
+  // ---------- identity ----------
+  function renderWho(){
+    const idCard=document.getElementById("idCard"), whoBar=document.getElementById("whoBar");
+    if(me){
+      idCard.style.display="none"; whoBar.style.display="flex";
+      document.getElementById("whoText").textContent = "Ordering as " + me.name + " (" + me.phone + ")";
+    } else {
+      idCard.style.display="block"; whoBar.style.display="none";
+    }
+  }
+  document.getElementById("idPhone").addEventListener("input", ()=>{
+    const phone = document.getElementById("idPhone").value.trim();
+    const match = state.customers.find(c => (c.phone||"").replace(/\s+/g,"") === phone.replace(/\s+/g,"") && phone.length>4);
+    document.getElementById("idNameWrap").style.display = (phone.length>4 && !match) ? "block" : "none";
+  });
+  document.getElementById("idContinueBtn").addEventListener("click", async ()=>{
+    const phone = document.getElementById("idPhone").value.trim();
+    if(phone.length<5){ toast("Enter a valid phone number"); return; }
+    let match = state.customers.find(c => (c.phone||"").replace(/\s+/g,"") === phone.replace(/\s+/g,""));
+    if(match){
+      me = { id: match.id, name: match.name, phone: match.phone };
+    } else {
+      const name = document.getElementById("idName").value.trim();
+      if(!name){ toast("Tell us your name so we can set you up"); return; }
+      const res = await API.post("/api/orders/register", { name, phone });
+      if(res.data.error){ toast(res.data.error); return; }
+      me = { id: res.data.id, name, phone };
+    }
+    localStorage.setItem("biopacq_customer", JSON.stringify(me));
+    renderWho(); renderProducts(); renderOrders();
+    toast("Welcome, " + me.name + "!");
+  });
+  document.getElementById("switchUserBtn").addEventListener("click", ()=>{
+    me=null; localStorage.removeItem("biopacq_customer");
+    document.getElementById("idPhone").value=""; document.getElementById("idName").value="";
+    renderWho(); renderOrders();
+  });
+
+  // ---------- product catalog ----------
+  function rateFor(product){
+    if(me){
+      const c = state.customers.find(c=>c.id===me.id);
+      if(c && c.rates && c.rates[product.id]!=null) return c.rates[product.id];
+    }
+    return product.baseCost;
+  }
+  function renderProducts(){
+    const wrap = document.getElementById("productList"); wrap.innerHTML="";
+    state.products.forEach(p=>{
+      const qty = cart[p.id] || 0;
+      const rate = rateFor(p);
+      const div = document.createElement("div"); div.className="product";
+      div.innerHTML = `
+        <div>
+          <div class="name">${p.name}</div>
+          <div class="meta">${p.stock} ${p.unit} in stock</div>
+          <div class="price nums">₹${rate.toFixed(2)} / ${p.unit}</div>
+        </div>
+        <div class="stepper">
+          <button data-act="dec" ${qty<=0?"disabled":""}>−</button>
+          <span class="nums">${qty}</span>
+          <button data-act="inc" ${qty>=p.stock?"disabled":""}>+</button>
+        </div>`;
+      div.querySelector('[data-act="inc"]').addEventListener("click", ()=>{
+        if(!me){ toast("Please sign in first"); return; }
+        cart[p.id]=Math.min(p.stock,(cart[p.id]||0)+1); renderProducts(); renderCartBadge();
+      });
+      div.querySelector('[data-act="dec"]').addEventListener("click", ()=>{
+        cart[p.id]=Math.max(0,(cart[p.id]||0)-1); if(!cart[p.id]) delete cart[p.id];
+        renderProducts(); renderCartBadge();
+      });
+      wrap.appendChild(div);
+    });
+  }
+  function renderCartBadge(){
+    const n = Object.values(cart).reduce((a,b)=>a+b,0);
+    const badge=document.getElementById("cartBadge");
+    badge.style.display = n>0 ? "flex" : "none"; badge.textContent=n;
+  }
+
+  // ---------- cart drawer ----------
+  function cartTotal(){
+    return Object.entries(cart).reduce((sum,[pid,qty])=>{
+      const p = state.products.find(p=>p.id===pid); if(!p) return sum;
+      return sum + qty*rateFor(p);
+    },0);
+  }
+  function renderCart(){
+    const wrap=document.getElementById("cartLines"); wrap.innerHTML="";
+    const entries = Object.entries(cart);
+    if(entries.length===0){ wrap.innerHTML='<div class="empty">Your cart is empty.</div>'; }
+    entries.forEach(([pid,qty])=>{
+      const p=state.products.find(p=>p.id===pid); if(!p) return;
+      const rate=rateFor(p);
+      const line=document.createElement("div"); line.className="cart-line";
+      line.innerHTML = `<div><div class="n">${p.name}</div><div class="p nums">${qty} ${p.unit} × ₹${rate.toFixed(2)}</div></div><div class="nums">₹${(qty*rate).toFixed(2)}</div>`;
+      wrap.appendChild(line);
+    });
+    document.getElementById("cartTotal").textContent = "₹" + cartTotal().toFixed(2);
+
+    const opts=document.getElementById("payOptions"); opts.innerHTML="";
+    const options = [{id:"credit",title:"Credit / Udhari",desc:"Pay later — added to your running balance."}];
+    if(config.razorpayEnabled) options.unshift({id:"online",title:"Pay Online Now",desc:"Card, UPI or netbanking via Razorpay."});
+    options.forEach(o=>{
+      const el=document.createElement("div"); el.className="pay-option"+(payMethod===o.id?" selected":"");
+      el.innerHTML = `<div><strong>${o.title}</strong><p>${o.desc}</p></div>`;
+      el.addEventListener("click", ()=>{ payMethod=o.id; renderCart(); });
+      opts.appendChild(el);
+    });
+  }
+  document.getElementById("openCartBtn").addEventListener("click", ()=>{
+    document.getElementById("cartError").style.display="none";
+    renderCart(); document.getElementById("cartDrawer").classList.add("open");
+  });
+  document.getElementById("closeCartBtn").addEventListener("click", ()=> document.getElementById("cartDrawer").classList.remove("open"));
+  document.getElementById("cartDrawer").addEventListener("click", (e)=>{ if(e.target.id==="cartDrawer") e.currentTarget.classList.remove("open"); });
+
+  function cartErr(msg){ const e=document.getElementById("cartError"); e.textContent=msg; e.style.display="block"; }
+
+  document.getElementById("placeOrderBtn").addEventListener("click", async ()=>{
+    if(!me){ cartErr("Please sign in on the Shop tab first."); return; }
+    const items = Object.entries(cart).map(([productId,qty])=>({productId,qty}));
+    if(items.length===0){ cartErr("Add something to your cart first."); return; }
+    const amount = cartTotal();
+    const btn = document.getElementById("placeOrderBtn"); btn.disabled=true; btn.textContent="Placing…";
+
+    try{
+      if(payMethod==="online"){
+        const created = await API.post("/api/orders/create-payment-order", { amount });
+        if(created.data.error){ cartErr(created.data.error); return; }
+        const rzpOrder = created.data.order;
+        const rzp = new Razorpay({
+          key: created.data.keyId,
+          amount: rzpOrder.amount,
+          currency: rzpOrder.currency,
+          order_id: rzpOrder.id,
+          name: "BioPacq",
+          description: "Order payment",
+          prefill: { name: me.name, contact: me.phone },
+          theme: { color: "#1E3523" },
+          handler: async function(response){
+            const res = await API.post("/api/orders", {
+              customerId: me.id, customerName: me.name, customerPhone: me.phone,
+              items, paymentMethod: "online",
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            });
+            if(res.data.error){ toast(res.data.error); return; }
+            afterOrderPlaced();
+          },
+          modal: { ondismiss: function(){ btn.disabled=false; btn.textContent="Place Order"; } }
+        });
+        rzp.open();
+      } else {
+        const res = await API.post("/api/orders", { customerId: me.id, customerName: me.name, customerPhone: me.phone, items, paymentMethod: "credit" });
+        if(res.data.error){ cartErr(res.data.error); return; }
+        afterOrderPlaced();
+      }
+    } finally {
+      btn.disabled=false; btn.textContent="Place Order";
+    }
+  });
+
+  function afterOrderPlaced(){
+    cart={}; renderProducts(); renderCartBadge();
+    document.getElementById("cartDrawer").classList.remove("open");
+    document.querySelector('.tab[data-tab="orders"]').click();
+    toast("Order placed! Waiting for the store to accept.");
+  }
+
+  // ---------- orders / tracking ----------
+  const STATUS_LABEL = { pending_review:"Waiting for store", accepted:"Accepted", preparing:"Preparing", ready:"Ready", out_for_delivery:"Out for delivery", delivered:"Delivered", rejected:"Rejected", expired:"Expired (no response)", cancelled:"Cancelled" };
+  const PIPELINE = ["accepted","preparing","ready","out_for_delivery","delivered"];
+
+  function renderOrders(){
+    const wrap=document.getElementById("ordersList");
+    if(!me){ wrap.innerHTML='<div class="empty"><div class="hex"></div>Sign in on the Shop tab to see your orders.</div>'; return; }
+    const mine = state.orders.filter(o=>o.customerId===me.id);
+    if(mine.length===0){ wrap.innerHTML='<div class="empty"><div class="hex"></div>No orders yet — go place one!</div>'; return; }
+    wrap.innerHTML="";
+    mine.forEach(o=>{
+      const card=document.createElement("div"); card.className="order-card";
+      const itemsTxt = o.items.map(it=>`${it.qty} ${it.unit||""} ${it.name}`).join(", ");
+      let extra = "";
+      if(o.status==="pending_review"){
+        extra = `<div class="countdown nums" data-deadline="${o.acceptDeadline}">--:--</div><button class="btn btn-ghost cancel-btn" data-id="${o.id}" style="width:100%;">Cancel order</button>`;
+      } else if(PIPELINE.includes(o.status)){
+        const idx = PIPELINE.indexOf(o.status);
+        extra = `<div class="progress">${PIPELINE.map((s,i)=>`<div class="${i<=idx?'done':''}"></div>`).join("")}</div>
+                 <div style="font-size:12px;color:var(--ink-soft);text-align:center;">${PIPELINE.map(s=>STATUS_LABEL[s]).join(" → ")}</div>`;
+      } else if(o.note){
+        extra = `<div style="font-size:12px;color:var(--rust);margin-top:6px;">${o.note}</div>`;
+      }
+      card.innerHTML = `
+        <div class="head">
+          <span class="oid">#${o.id.slice(-6).toUpperCase()} · ${new Date(o.placedAt).toLocaleString()}</span>
+          <span class="badge b-${o.status}">${STATUS_LABEL[o.status]||o.status}</span>
+        </div>
+        <div style="font-size:13px;margin-bottom:4px;">${itemsTxt}</div>
+        <div class="nums" style="font-weight:700;">₹${o.amount.toFixed(2)} · ${o.paymentMethod==="online"?"Paid online":"Credit/Udhari"}</div>
+        ${extra}`;
+      wrap.appendChild(card);
+    });
+    wrap.querySelectorAll(".cancel-btn").forEach(b=>b.addEventListener("click", async ()=>{
+      const res = await API.post(`/api/orders/${b.dataset.id}/cancel`);
+      if(res.data.error) toast(res.data.error);
+    }));
+  }
+
+  setInterval(()=>{
+    document.querySelectorAll(".countdown").forEach(el=>{
+      const deadline = new Date(el.dataset.deadline).getTime();
+      const diff = Math.max(0, deadline - Date.now());
+      const m = Math.floor(diff/60000), s = Math.floor((diff%60000)/1000);
+      el.textContent = diff>0 ? `${m}:${String(s).padStart(2,"0")}` : "Expiring…";
+    });
+  },1000);
+
+  // ---------- tabs ----------
+  document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById("panel-"+t.dataset.tab).classList.add("active");
+    if(t.dataset.tab==="orders") renderOrders();
+  }));
+
+  // ---------- live sync ----------
+  function applyState(s){ state=s; renderProducts(); renderOrders(); renderCartBadge(); }
+  function loadState(){ API.get("/api/state").then(applyState); }
+  function connectWS(){
+    const proto = location.protocol==="https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(proto+"//"+location.host+"/ws");
+    ws.onmessage = (ev)=>{ const msg=JSON.parse(ev.data); if(msg.type==="state") applyState(msg.payload); };
+    ws.onclose = ()=> setTimeout(connectWS, 1500);
+  }
+
+  // ---------- init ----------
+  API.get("/api/config").then(c=>{ config=c; renderCart(); });
+  renderWho();
+  loadState();
+  connectWS();
+
+  if("serviceWorker" in navigator){ navigator.serviceWorker.register("customer-sw.js").catch(()=>{}); }
+</script>
+</body>
+</html>

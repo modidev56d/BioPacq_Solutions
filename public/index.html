@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>BioPacq — Business Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --forest: #1E3523;
+    --forest-2: #16281A;
+    --forest-tint: #3C5A44;
+    --cream: #EFECE1;
+    --paper: #F8F6EF;
+    --cream-line: #DCD6C2;
+    --gold: #AD8A50;
+    --gold-deep: #8C6D3A;
+    --rust: #9B4A34;
+    --rust-tint: #F1DED5;
+    --ok: #43684A;
+    --ok-tint: #DCE7DA;
+    --ink: #1E3523;
+    --ink-soft: #5B6B5D;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: contain;
+  }
+  .font-display { font-family: 'Fraunces', serif; }
+  .nums { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+  /* Hexagon motif, echoing the BioPacq mark */
+  .hex {
+    clip-path: polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0% 50%);
+  }
+  .hex-outline {
+    position: relative;
+  }
+  .hex-ring {
+    background: linear-gradient(135deg, rgba(173,138,80,.35), rgba(239,236,225,0));
+  }
+
+  ::-webkit-scrollbar { width: 0; height: 0; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .navbtn { color: rgba(239,236,225,.55); transition: color .15s ease, transform .15s ease; }
+  .navbtn.active { color: var(--cream); }
+  .navbtn.active .navdot { opacity: 1; transform: scale(1); }
+  .navdot { opacity: 0; transform: scale(.4); transition: all .18s ease; }
+
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--cream-line);
+    border-radius: 18px;
+  }
+
+  .btn-primary {
+    background: var(--forest);
+    color: var(--cream);
+  }
+  .btn-primary:active { background: var(--forest-2); }
+  .btn-gold {
+    background: var(--gold);
+    color: #26210F;
+  }
+  .btn-gold:active { background: var(--gold-deep); }
+
+  input, select, textarea {
+    background: #FFFEFB;
+    border: 1px solid var(--cream-line);
+    color: var(--ink);
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--forest-tint);
+    box-shadow: 0 0 0 3px rgba(60,90,68,.15);
+  }
+  input::placeholder { color: #9AA79B; }
+
+  .pill { border-radius: 999px; }
+
+  .chip-paid { background: var(--ok-tint); color: var(--ok); }
+  .chip-udhari { background: var(--rust-tint); color: var(--rust); }
+
+  .sheet {
+    transform: translateY(100%);
+    transition: transform .28s cubic-bezier(.32,.72,0,1);
+  }
+  .sheet.open { transform: translateY(0); }
+  .sheet-backdrop {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .22s ease;
+  }
+  .sheet-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .divider-hex {
+    height: 1px;
+    background: repeating-linear-gradient(90deg, var(--cream-line) 0 6px, transparent 6px 10px);
+  }
+
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  .toast {
+    transform: translateY(140%);
+    transition: transform .25s cubic-bezier(.32,.72,0,1);
+  }
+  .toast.show { transform: translateY(0); }
+</style>
+</head>
+<body class="min-h-full">
+
+<div id="app" class="max-w-md mx-auto min-h-full flex flex-col" style="min-height:100dvh;">
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-30" style="background:var(--forest); padding-top:env(safe-area-inset-top,0px);">
+    <div class="px-5 pt-4 pb-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <svg width="34" height="34" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 6 L88 27 V73 L50 94 L12 73 V27 Z" stroke="#EFECE1" stroke-width="5" fill="none" stroke-linejoin="round"/>
+          <path d="M50 6 V50 M50 50 L88 27 M50 50 L12 73 M50 50 V94" stroke="#EFECE1" stroke-width="5" fill="none" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <div class="font-display text-xl leading-none" style="color:var(--cream); letter-spacing:.01em;">BioPacq</div>
+          <div class="text-[10px] mt-1 leading-none" style="color:rgba(239,236,225,.65); letter-spacing:.06em;">Packaging solutions, sustainable future</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="openDataSheetBtn" aria-label="Import and export data" class="w-9 h-9 rounded-full flex items-center justify-center" style="background:rgba(239,236,225,.12);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="#EFECE1" stroke-width="1.7"/><path d="M4 10h16M9 10v10" stroke="#EFECE1" stroke-width="1.7"/></svg>
+        </button>
+        <button id="dateBtn" class="text-right">
+          <div id="headerDate" class="text-sm nums" style="color:var(--cream);"></div>
+          <div class="text-[10px]" style="color:rgba(239,236,225,.55);">today</div>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="flex-1 px-4 pt-4" style="padding-bottom: 96px;">
+
+    <!-- DASHBOARD -->
+    <section id="tab-dashboard" class="tab-panel active space-y-4">
+      <div>
+        <h1 class="font-display text-2xl" style="color:var(--ink);">Good to see you</h1>
+        <p class="text-sm" style="color:var(--ink-soft);">Here's where the business stands today.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="card p-4">
+          <div class="text-xs" style="color:var(--ink-soft);">Sold today</div>
+          <div id="statSalesToday" class="font-display text-2xl mt-1 nums">₹0</div>
+        </div>
+        <div class="card p-4">
+          <div class="text-xs" style="color:var(--ink-soft);">Margin today</div>
+          <div id="statMarginToday" class="font-display text-2xl mt-1 nums" style="color:var(--ok);">₹0</div>
+        </div>
+        <div class="card p-4 col-span-2 flex items-center justify-between">
+          <div>
+            <div class="text-xs" style="color:var(--ink-soft);">Total outstanding (Udhari)</div>
+            <div id="statOutstanding" class="font-display text-2xl mt-1 nums" style="color:var(--rust);">₹0</div>
+          </div>
+          <div class="hex w-11 h-11 flex items-center justify-center" style="background:var(--rust-tint);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5.5c0-1.9-2.2-3.5-5-3.5S7 3.6 7 5.5 9.2 9 12 9s5 1.6 5 3.5-2.2 3.5-5 3.5-5-1.6-5-3.5" stroke="#9B4A34" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-display text-lg">Stock on hand</h2>
+          <span class="text-xs" style="color:var(--ink-soft);">"Maal" available</span>
+        </div>
+        <div id="stockOverview" class="space-y-2"></div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-lg mb-2">Recent activity</h2>
+        <div id="recentActivity" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- STOCK -->
+    <section id="tab-stock" class="tab-panel space-y-4">
+      <div>
+        <h1 class="font-display text-2xl">Bulk stock control</h1>
+        <p class="text-sm" style="color:var(--ink-soft);">Log every batch of maal that comes in.</p>
+      </div>
+
+      <div class="card p-4 space-y-3">
+        <h3 class="font-semibold text-sm" style="color:var(--forest);">Add bulk stock</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block col-span-1">
+            <span class="text-xs" style="color:var(--ink-soft);">Date received</span>
+            <input id="stockDate" type="date" class="w-full mt-1 rounded-xl px-3 py-2.5 text-sm" />
+          </label>
+          <label class="block col-span-1">
+            <span class="text-xs" style="color:var(--ink-soft);">Product</span>
+            <select id="stockProduct" class="w-full mt-1 rounded-xl px-3 py-2.5 text-sm"></select>
+          </label>
+          <label class="block col-span-1">
+            <span class="text-xs" style="color:var(--ink-soft);">Quantity added</span>
+            <input id="stockQty" type="number" min="0" placeholder="0" class="w-full mt-1 rounded-xl px-3 py-2.5 text-sm nums" />
+          </label>
+          <label class="block col-span-1">
+            <span class="text-xs" style="color:var(--ink-soft);">Base cost / unit</span>
+            <input id="stockCost" type="number" min="0" step="0.01" placeholder="₹0.00" class="w-full mt-1 rounded-xl px-3 py-2.5 text-sm nums" />
+          </label>
+        </div>
+        <button id="addStockBtn" class="btn-primary w-full py-3 rounded-xl text-sm font-semibold pill">Add to stock</button>
+      </div>
+
+      <div>
+        <h2 class="font-display text-lg mb-2">Stock history</h2>
+        <div id="stockHistory" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- SALES -->
+    <section id="tab-sales" class="tab-panel space-y-4">
+      <div>
+        <h1 class="font-display text-2xl">Daily register</h1>
+        <p class="text-sm" style="color:var(--ink-soft);">Log each sale as it happens.</p>
+      </div>
+
+      <div class="card p-4 space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-xs" style="color:var(--ink-soft);">Date</span>
+            <input id="saleDate" type="date" class="w-full mt-1 rounded-xl px-3 py-2.5 text-sm" />
+          </label>
+          <label class="block">
+            <span class="text-xs" style="color:var(--ink-soft);">Customer</span>
+            <select id="saleCustomer" class="w-full mt-1 rounded-xl px-3 py-2.5 text-sm"></select>
+          </label>
+          <label class="block">
+            <span class="text-xs" style="color:var(--ink-soft);">Product</span>
+            <select id="saleProduct" class="w-full mt-1 rounded-xl px-3 py-2.5 text-sm"></select>
+          </label>
+          <label class="block">
+            <span class="text-xs" style="color:var(--ink-soft);">Quantity sold</span>
+            <input id="saleQty" type="number" min="0" placeholder="0" class="w-full mt-1 rounded-xl px-3 py-2.5 text-sm nums" />
+          </label>
+          <label class="block col-span-2">
+            <span class="text-xs" style="color:var(--ink-soft);">Rate applied (per unit)</span>
+            <input id="saleRate" type="number" min="0" step="0.01" placeholder="₹0.00" class="w-full mt-1 rounded-xl px-3 py-2.5 text-sm nums" />
+          </label>
+        </div>
+
+        <div class="flex gap-2">
+          <button data-status="paid" class="statusToggle flex-1 py-2.5 rounded-xl text-sm font-semibold pill chip-paid">Paid</button>
+          <button data-status="udhari" class="statusToggle flex-1 py-2.5 rounded-xl text-sm font-semibold pill" style="background:#EFECE1; color:var(--ink-soft);">Udhari</button>
+        </div>
+
+        <div class="rounded-xl px-4 py-3 flex items-center justify-between" style="background:var(--cream);">
+          <div>
+            <div class="text-[11px]" style="color:var(--ink-soft);">Total sale</div>
+            <div id="liveTotal" class="font-display text-lg nums">₹0</div>
+          </div>
+          <div class="text-right">
+            <div class="text-[11px]" style="color:var(--ink-soft);">Margin on this entry</div>
+            <div id="liveMargin" class="font-display text-lg nums" style="color:var(--ok);">₹0</div>
+          </div>
+        </div>
+
+        <button id="logSaleBtn" class="btn-primary w-full py-3 rounded-xl text-sm font-semibold pill">Log sale</button>
+      </div>
+
+      <button id="exportBtn" class="btn-gold w-full py-3.5 rounded-xl text-sm font-bold pill flex items-center justify-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 20h14" stroke="#26210F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Export today's register
+      </button>
+
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-display text-lg">Today's entries</h2>
+          <span id="todayCount" class="text-xs" style="color:var(--ink-soft);"></span>
+        </div>
+        <div id="todayEntries" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- CUSTOMERS -->
+    <section id="tab-customers" class="tab-panel space-y-4">
+      <div>
+        <h1 class="font-display text-2xl">Customers</h1>
+        <p class="text-sm" style="color:var(--ink-soft);">Profiles, custom rates and balances.</p>
+      </div>
+
+      <div class="card p-4 space-y-3">
+        <h3 class="font-semibold text-sm" style="color:var(--forest);">Add customer</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <input id="newCustName" type="text" placeholder="Business name" class="w-full rounded-xl px-3 py-2.5 text-sm" />
+          <input id="newCustPhone" type="tel" placeholder="Phone (optional)" class="w-full rounded-xl px-3 py-2.5 text-sm" />
+        </div>
+        <button id="addCustomerBtn" class="btn-primary w-full py-2.5 rounded-xl text-sm font-semibold pill">Add customer</button>
+      </div>
+
+      <div id="customerList" class="space-y-2"></div>
+    </section>
+
+    <!-- LEDGER -->
+    <section id="tab-ledger" class="tab-panel space-y-4">
+      <div>
+        <h1 class="font-display text-2xl">Cash &amp; Udhari ledger</h1>
+        <p class="text-sm" style="color:var(--ink-soft);">Track repayments against every balance.</p>
+      </div>
+
+      <div class="card p-4 space-y-3">
+        <h3 class="font-semibold text-sm" style="color:var(--forest);">Record a payment</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block col-span-2">
+            <span class="text-xs" style="color:var(--ink-soft);">Customer</span>
+            <select id="paymentCustomer" class="w-full mt-1 rounded-xl px-3 py-2.5 text-sm"></select>
+          </label>
+          <label class="block">
+            <span class="text-xs" style="color:var(--ink-soft);">Date</span>
+            <input id="paymentDate" type="date" class="w-full mt-1 rounded-xl px-3 py-2.5 text-sm" />
+          </label>
+          <label class="block">
+            <span class="text-xs" style="color:var(--ink-soft);">Amount received</span>
+            <input id="paymentAmount" type="number" min="0" step="0.01" placeholder="₹0.00" class="w-full mt-1 rounded-xl px-3 py-2.5 text-sm nums" />
+          </label>
+        </div>
+        <button id="recordPaymentBtn" class="btn-primary w-full py-2.5 rounded-xl text-sm font-semibold pill">Record payment</button>
+      </div>
+
+      <div>
+        <h2 class="font-display text-lg mb-2">Outstanding by customer</h2>
+        <div id="ledgerBalances" class="space-y-2"></div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-lg mb-2">Chronological history</h2>
+        <div id="ledgerTimeline" class="space-y-2"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40" style="background:var(--forest); padding-bottom:env(safe-area-inset-bottom,0px);">
+    <div class="max-w-md mx-auto grid grid-cols-5">
+      <button data-tab="dashboard" class="navbtn active flex flex-col items-center gap-1 py-2.5">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M4 11.5 12 4l8 7.5M6 10v9h12v-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="text-[10px]">Home</span>
+        <span class="navdot w-1 h-1 rounded-full" style="background:var(--gold);"></span>
+      </button>
+      <button data-tab="stock" class="navbtn flex flex-col items-center gap-1 py-2.5">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3 7.5V16l9 4.5 9-4.5V7.5M12 12v8.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span class="text-[10px]">Stock</span>
+        <span class="navdot w-1 h-1 rounded-full" style="background:var(--gold);"></span>
+      </button>
+      <button data-tab="sales" class="navbtn flex flex-col items-center gap-1 py-2.5">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M4 4h2l1.6 9.6a2 2 0 0 0 2 1.7h7.1a2 2 0 0 0 2-1.6L20 8H6.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19" r="1.4" fill="currentColor"/><circle cx="16.5" cy="19" r="1.4" fill="currentColor"/></svg>
+        <span class="text-[10px]">Sales</span>
+        <span class="navdot w-1 h-1 rounded-full" style="background:var(--gold);"></span>
+      </button>
+      <button data-tab="customers" class="navbtn flex flex-col items-center gap-1 py-2.5">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.6-3.2 2.9-5 5.5-5s4.9 1.8 5.5 5M15.5 8.2a3 3 0 1 1 3.2 3M20.5 19c-.4-2.2-1.6-3.8-3.4-4.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span class="text-[10px]">Customers</span>
+        <span class="navdot w-1 h-1 rounded-full" style="background:var(--gold);"></span>
+      </button>
+      <button data-tab="ledger" class="navbtn flex flex-col items-center gap-1 py-2.5">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M5 4h11l3 3v13H5V4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8.5 9.5h7M8.5 13h7M8.5 16.5h4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span class="text-[10px]">Ledger</span>
+        <span class="navdot w-1 h-1 rounded-full" style="background:var(--gold);"></span>
+      </button>
+    </div>
+  </nav>
+
+</div>
+
+<!-- CUSTOMER DETAIL SHEET -->
+<div id="sheetBackdrop" class="sheet-backdrop fixed inset-0 bg-black/40 z-40"></div>
+<div id="customerSheet" class="sheet fixed left-0 right-0 bottom-0 z-50 max-w-md mx-auto rounded-t-3xl overflow-hidden" style="background:var(--paper); max-height:88dvh;">
+  <div class="px-5 pt-3 pb-5 overflow-y-auto" style="max-height:88dvh; padding-bottom: calc(24px + env(safe-area-inset-bottom,0px));">
+    <div class="w-10 h-1.5 rounded-full mx-auto mb-4" style="background:var(--cream-line);"></div>
+    <div class="flex items-start justify-between mb-1">
+      <div>
+        <h2 id="sheetCustName" class="font-display text-2xl"></h2>
+        <p id="sheetCustPhone" class="text-xs" style="color:var(--ink-soft);"></p>
+      </div>
+      <button id="closeSheet" class="w-8 h-8 rounded-full flex items-center justify-center" style="background:var(--cream);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 5l14 14M19 5 5 19" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div id="sheetBalance" class="rounded-xl px-4 py-3 mt-3 mb-4"></div>
+
+    <h3 class="font-display text-lg mb-2">Custom pricing matrix</h3>
+    <div id="sheetPricing" class="space-y-2 mb-2"></div>
+    <button id="savePricingBtn" class="btn-primary w-full py-2.5 rounded-xl text-sm font-semibold pill mb-5">Save rates</button>
+
+    <h3 class="font-display text-lg mb-2">Ledger history</h3>
+    <div id="sheetLedger" class="space-y-2"></div>
+  </div>
+</div>
+
+<!-- DATA IMPORT/EXPORT SHEET -->
+<div id="dataSheetBackdrop" class="sheet-backdrop fixed inset-0 bg-black/40 z-40"></div>
+<div id="dataSheet" class="sheet fixed left-0 right-0 bottom-0 z-50 max-w-md mx-auto rounded-t-3xl overflow-hidden" style="background:var(--paper); max-height:88dvh;">
+  <div class="px-5 pt-3 pb-5 overflow-y-auto" style="max-height:88dvh; padding-bottom: calc(24px + env(safe-area-inset-bottom,0px));">
+    <div class="w-10 h-1.5 rounded-full mx-auto mb-4" style="background:var(--cream-line);"></div>
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <h2 class="font-display text-2xl">Import &amp; export</h2>
+        <p class="text-xs" style="color:var(--ink-soft);">Move data in and out as Excel workbooks.</p>
+      </div>
+      <button id="closeDataSheet" class="w-8 h-8 rounded-full flex items-center justify-center" style="background:var(--cream);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 5l14 14M19 5 5 19" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div class="card p-4 mb-3">
+      <h3 class="font-semibold text-sm mb-1" style="color:var(--forest);">Export your data</h3>
+      <p class="text-xs mb-3" style="color:var(--ink-soft);">One workbook, three tabs: Stock, Customers, Daily Sales — everything currently saved in the app.</p>
+      <button id="exportWorkbookBtn" class="btn-primary w-full py-2.5 rounded-xl text-sm font-semibold pill">Export full workbook (.xlsx)</button>
+    </div>
+
+    <div class="card p-4 mb-3">
+      <h3 class="font-semibold text-sm mb-1" style="color:var(--forest);">Blank templates</h3>
+      <p class="text-xs mb-3" style="color:var(--ink-soft);">Download empty Stock / Customers / Daily Sales sheets, ready to fill in and re-import.</p>
+      <button id="downloadTemplateBtn" class="w-full py-2.5 rounded-xl text-sm font-semibold pill" style="background:var(--cream); color:var(--forest); border:1px solid var(--cream-line);">Download templates (.xlsx)</button>
+    </div>
+
+    <div class="card p-4 mb-3">
+      <h3 class="font-semibold text-sm mb-1" style="color:var(--forest);">Import a workbook</h3>
+      <p class="text-xs mb-3" style="color:var(--ink-soft);">Upload a filled-in template, or your own exported workbook. Sheets are matched by name (Stock / Customers / Daily Sales) — any of the three, or all together.</p>
+      <label class="block w-full">
+        <input id="importFileInput" type="file" accept=".xlsx,.xls" class="hidden" />
+        <span id="importFileTrigger" class="block w-full py-2.5 rounded-xl text-sm font-semibold pill text-center cursor-pointer" style="background:var(--gold); color:#26210F;">Choose Excel file to import</span>
+      </label>
+      <div id="importFileName" class="text-xs mt-2 text-center" style="color:var(--ink-soft);"></div>
+    </div>
+
+    <div id="importResult" class="space-y-2"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast fixed left-4 right-4 z-50 max-w-md mx-auto" style="bottom: calc(88px + env(safe-area-inset-bottom,0px));">
+  <div class="rounded-xl px-4 py-3 text-sm font-medium shadow-lg" style="background:var(--forest); color:var(--cream);" id="toastMsg"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "biopacq_state_v1";
+  var todayStr = function(){ return new Date().toISOString().slice(0,10); };
+  var fmtMoney = function(n){
+    n = Number(n)||0;
+    var neg = n < 0; n = Math.abs(n);
+    var s = n.toLocaleString('en-IN', {maximumFractionDigits:2, minimumFractionDigits: (n % 1 !== 0) ? 2 : 0});
+    return (neg ? "-₹" : "₹") + s;
+  };
+  var fmtDate = function(d){
+    var dt = new Date(d + "T00:00:00");
+    return dt.toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'});
+  };
+  var uid = function(prefix){ return prefix + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2,7); };
+
+  function defaultState(){
+    var today = todayStr();
+    var products = [
+      { id:"p1", name:"Bagasse Box", unit:"pc", stock:850, baseCost:9 },
+      { id:"p2", name:"Areca Plate", unit:"pc", stock:1200, baseCost:4 },
+      { id:"p3", name:"Compostable Cup", unit:"pc", stock:2000, baseCost:3 }
+    ];
+    var customers = [
+      { id:"c1", name:"Sharma Traders", phone:"98200 11223",
+        rates:{ p1:14, p2:7, p3:5 } },
+      { id:"c2", name:"Patel Enterprises", phone:"98700 44556",
+        rates:{ p1:13, p2:6.5, p3:4.5 } }
+    ];
+    var stockLog = [
+      { id: uid("st"), date:"2026-09-01", productId:"p1", qty:850, cost:9 },
+      { id: uid("st"), date:"2026-09-01", productId:"p2", qty:1200, cost:4 },
+      { id: uid("st"), date:"2026-09-01", productId:"p3", qty:2000, cost:3 }
+    ];
+    var sales = [
+      { id: uid("sl"), date:"2026-09-01", customerId:"c1", productId:"p1", qty:357, rate:14, total:4998, cost:3213, margin:1785, status:"udhari" },
+      { id: uid("sl"), date:"2026-09-10", customerId:"c2", productId:"p2", qty:492, rate:6.5, total:3198, cost:1968, margin:1230, status:"udhari" }
+    ];
+    var payments = [
+      { id: uid("pm"), date:"2026-09-15", customerId:"c1", amount:2000 },
+      { id: uid("pm"), date:"2026-09-20", customerId:"c1", amount:1000 }
+    ];
+    return { products:products, customers:customers, stockLog:stockLog, sales:sales, payments:payments };
+  }
+
+  // ---------- LIVE SERVER STATE (replaces localStorage) ----------
+  // The database on the server is the single source of truth. This device
+  // keeps a local copy in `state` for fast rendering, refreshed by:
+  //  1) an initial GET /api/state on load,
+  //  2) the response of every write it makes itself, and
+  //  3) a WebSocket push whenever ANY device (this one or another) changes data.
+  var state = defaultState(); // placeholder until the server responds
+  var wsConn = null;
+  var wsConnected = false;
+
+  function applyServerState(s){
+    if (s && s.products && s.customers) {
+      state = s;
+      renderAll();
+      computeLive();
+    }
+  }
+
+  function loadStateFromServer(){
+    fetch("/api/state")
+      .then(function(r){ return r.json(); })
+      .then(applyServerState)
+      .catch(function(e){ console.error("Could not load state from server", e); toast("Can't reach the BioPacq server."); });
+  }
+
+  function connectLiveSync(){
+    var proto = location.protocol === "https:" ? "wss:" : "ws:";
+    wsConn = new WebSocket(proto + "//" + location.host + "/ws");
+    wsConn.onopen = function(){ wsConnected = true; };
+    wsConn.onmessage = function(ev){
+      try {
+        var msg = JSON.parse(ev.data);
+        if (msg.type === "state") applyServerState(msg.payload);
+      } catch(e){ console.error("bad ws message", e); }
+    };
+    wsConn.onclose = function(){ wsConnected = false; setTimeout(connectLiveSync, 2000); };
+    wsConn.onerror = function(){ wsConn.close(); };
+  }
+
+  // Generic helper: POST/PUT JSON to the backend, apply the returned state,
+  // and surface any validation error via the toast — used by every action below.
+  function apiCall(method, url, body){
+    return fetch(url, {
+      method: method,
+      headers: { "Content-Type": "application/json" },
+      body: body != null ? JSON.stringify(body) : undefined
+    }).then(function(r){
+      return r.json().then(function(data){
+        if (!r.ok || data.error) { toast(data.error || "Something went wrong."); return null; }
+        if (data.state) applyServerState(data.state);
+        return data;
+      });
+    }).catch(function(e){
+      console.error(e);
+      toast("Can't reach the BioPacq server.");
+      return null;
+    });
+  }
+
+  function save(){ /* no-op: persistence now happens via explicit API calls per action */ }
+
+  function productById(id){ return state.products.find(function(p){return p.id===id;}); }
+  function customerById(id){ return state.customers.find(function(c){return c.id===id;}); }
+
+  function customerBalance(customerId){
+    var owed = state.sales.filter(function(s){ return s.customerId===customerId && s.status==="udhari"; })
+      .reduce(function(sum,s){ return sum + s.total; }, 0);
+    var paid = state.payments.filter(function(p){ return p.customerId===customerId; })
+      .reduce(function(sum,p){ return sum + p.amount; }, 0);
+    return Math.round((owed - paid) * 100) / 100;
+  }
+
+  function totalOutstanding(){
+    return state.customers.reduce(function(sum,c){ return sum + customerBalance(c.id); }, 0);
+  }
+
+  // ---------- TOAST ----------
+  var toastTimer = null;
+  function toast(msg){
+    var t = document.getElementById("toast");
+    document.getElementById("toastMsg").textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+
+  // ---------- NAV ----------
+  var navButtons = document.querySelectorAll(".navbtn");
+  navButtons.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var tab = btn.getAttribute("data-tab");
+      switchTab(tab);
+    });
+  });
+  function switchTab(tab){
+    document.querySelectorAll(".tab-panel").forEach(function(p){ p.classList.remove("active"); });
+    document.getElementById("tab-" + tab).classList.add("active");
+    navButtons.forEach(function(b){ b.classList.toggle("active", b.getAttribute("data-tab")===tab); });
+    window.scrollTo({top:0, behavior:"instant"});
+    renderAll();
+  }
+
+  // ---------- HEADER DATE ----------
+  document.getElementById("headerDate").textContent = new Date().toLocaleDateString('en-IN', {day:'numeric', month:'short'});
+
+  // ---------- SELECT POPULATORS ----------
+  function fillProductSelect(sel){
+    sel.innerHTML = "";
+    state.products.forEach(function(p){
+      var opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = p.name + " (" + p.stock + " " + p.unit + ")";
+      sel.appendChild(opt);
+    });
+  }
+  function fillCustomerSelect(sel){
+    sel.innerHTML = "";
+    state.customers.forEach(function(c){
+      var opt = document.createElement("option");
+      opt.value = c.id;
+      opt.textContent = c.name;
+      sel.appendChild(opt);
+    });
+  }
+
+  // ================= DASHBOARD =================
+  function renderDashboard(){
+    var today = todayStr();
+    var todaySales = state.sales.filter(function(s){ return s.date===today; });
+    var salesTotal = todaySales.reduce(function(sum,s){ return sum+s.total; }, 0);
+    var marginTotal = todaySales.reduce(function(sum,s){ return sum+s.margin; }, 0);
+    document.getElementById("statSalesToday").textContent = fmtMoney(salesTotal);
+    document.getElementById("statMarginToday").textContent = fmtMoney(marginTotal);
+    document.getElementById("statOutstanding").textContent = fmtMoney(totalOutstanding());
+
+    var stockWrap = document.getElementById("stockOverview");
+    stockWrap.innerHTML = "";
+    state.products.forEach(function(p){
+      var low = p.stock < 100;
+      var row = document.createElement("div");
+      row.className = "card p-3.5 flex items-center justify-between";
+      row.innerHTML =
+        '<div class="flex items-center gap-3">' +
+          '<div class="hex w-9 h-9 flex items-center justify-center" style="background:' + (low? 'var(--rust-tint)':'#E7E2CE') + ';">' +
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z" stroke="' + (low?'#9B4A34':'#1E3523') + '" stroke-width="1.8" stroke-linejoin="round"/></svg>' +
+          '</div>' +
+          '<div><div class="text-sm font-semibold">' + p.name + '</div><div class="text-[11px]" style="color:var(--ink-soft);">₹' + p.baseCost.toFixed(2) + ' base cost / ' + p.unit + '</div></div>' +
+        '</div>' +
+        '<div class="text-right"><div class="font-display text-lg nums ' + (low?'':'') + '" style="color:' + (low?'var(--rust)':'var(--ink)') + ';">' + p.stock + '</div><div class="text-[10px]" style="color:var(--ink-soft);">' + p.unit + ' left</div></div>';
+      stockWrap.appendChild(row);
+    });
+
+    var activityWrap = document.getElementById("recentActivity");
+    var events = [];
+    state.sales.forEach(function(s){
+      events.push({ date:s.date, type:'sale', label: (customerById(s.customerId)||{}).name + " bought " + s.qty + " " + (productById(s.productId)||{}).unit + " " + (productById(s.productId)||{}).name, amount: s.total, status: s.status, ts: s.date + s.id });
+    });
+    state.payments.forEach(function(p){
+      events.push({ date:p.date, type:'payment', label: (customerById(p.customerId)||{}).name + " paid down balance", amount: p.amount, status:'paid', ts: p.date + p.id });
+    });
+    events.sort(function(a,b){ return b.ts < a.ts ? -1 : 1; });
+    events = events.slice(0,6);
+    activityWrap.innerHTML = "";
+    if (events.length===0){
+      activityWrap.innerHTML = '<div class="card p-4 text-sm text-center" style="color:var(--ink-soft);">No activity logged yet.</div>';
+    }
+    events.forEach(function(e){
+      var row = document.createElement("div");
+      row.className = "card p-3.5 flex items-center justify-between";
+      var badge = e.type==='payment'
+        ? '<span class="text-[10px] px-2 py-1 pill chip-paid">payment</span>'
+        : (e.status==='paid' ? '<span class="text-[10px] px-2 py-1 pill chip-paid">paid</span>' : '<span class="text-[10px] px-2 py-1 pill chip-udhari">udhari</span>');
+      row.innerHTML =
+        '<div class="flex-1 pr-2"><div class="text-sm">' + e.label + '</div><div class="text-[11px]" style="color:var(--ink-soft);">' + fmtDate(e.date) + '</div></div>' +
+        '<div class="text-right"><div class="text-sm font-semibold nums">' + fmtMoney(e.amount) + '</div>' + badge + '</div>';
+      activityWrap.appendChild(row);
+    });
+  }
+
+  // ================= STOCK =================
+  document.getElementById("stockDate").value = todayStr();
+  function refreshStockSelect(){ fillProductSelect(document.getElementById("stockProduct")); }
+  refreshStockSelect();
+
+  document.getElementById("addStockBtn").addEventListener("click", function(){
+    var date = document.getElementById("stockDate").value || todayStr();
+    var productId = document.getElementById("stockProduct").value;
+    var qty = parseFloat(document.getElementById("stockQty").value);
+    var cost = parseFloat(document.getElementById("stockCost").value);
+    if (!productId || !qty || qty<=0 || isNaN(cost) || cost<0){
+      toast("Fill quantity and base cost to add stock.");
+      return;
+    }
+    var p = productById(productId);
+    var pName = p ? p.name : "", pUnit = p ? p.unit : "";
+    apiCall("POST", "/api/stock", { date:date, productId:productId, qty:qty, cost:cost }).then(function(res){
+      if (!res) return;
+      document.getElementById("stockQty").value = "";
+      document.getElementById("stockCost").value = "";
+      toast("Added " + qty + " " + pUnit + " of " + pName + " to stock.");
+    });
+  });
+
+  function renderStockHistory(){
+    var wrap = document.getElementById("stockHistory");
+    wrap.innerHTML = "";
+    if (state.stockLog.length===0){
+      wrap.innerHTML = '<div class="card p-4 text-sm text-center" style="color:var(--ink-soft);">No stock entries yet.</div>';
+      return;
+    }
+    state.stockLog.slice().sort(function(a,b){ return a.date<b.date?1:-1; }).forEach(function(entry){
+      var p = productById(entry.productId);
+      var row = document.createElement("div");
+      row.className = "card p-3.5 flex items-center justify-between";
+      row.innerHTML =
+        '<div><div class="text-sm font-semibold">' + (p? p.name : "Unknown") + '</div><div class="text-[11px]" style="color:var(--ink-soft);">' + fmtDate(entry.date) + ' · ₹' + entry.cost.toFixed(2) + ' / ' + (p?p.unit:'') + '</div></div>' +
+        '<div class="font-display text-lg nums" style="color:var(--ok);">+' + entry.qty + '</div>';
+      wrap.appendChild(row);
+    });
+  }
+
+  // ================= SALES =================
+  document.getElementById("saleDate").value = todayStr();
+  var currentStatus = "paid";
+
+  function refreshSaleSelects(){
+    fillCustomerSelect(document.getElementById("saleCustomer"));
+    fillProductSelect(document.getElementById("saleProduct"));
+    autofillRate();
+  }
+  refreshSaleSelects();
+
+  document.getElementById("saleCustomer").addEventListener("change", autofillRate);
+  document.getElementById("saleProduct").addEventListener("change", autofillRate);
+  function autofillRate(){
+    var custId = document.getElementById("saleCustomer").value;
+    var prodId = document.getElementById("saleProduct").value;
+    var c = customerById(custId);
+    if (c && c.rates && c.rates[prodId] != null){
+      document.getElementById("saleRate").value = c.rates[prodId];
+    }
+    computeLive();
+  }
+
+  document.getElementById("saleQty").addEventListener("input", computeLive);
+  document.getElementById("saleRate").addEventListener("input", computeLive);
+
+  function computeLive(){
+    var qty = parseFloat(document.getElementById("saleQty").value) || 0;
+    var rate = parseFloat(document.getElementById("saleRate").value) || 0;
+    var prodId = document.getElementById("saleProduct").value;
+    var p = productById(prodId);
+    var baseCost = p ? p.baseCost : 0;
+    var total = qty * rate;
+    var margin = qty * (rate - baseCost);
+    document.getElementById("liveTotal").textContent = fmtMoney(total);
+    var marginEl = document.getElementById("liveMargin");
+    marginEl.textContent = fmtMoney(margin);
+    marginEl.style.color = margin < 0 ? "var(--rust)" : "var(--ok)";
+  }
+
+  document.querySelectorAll(".statusToggle").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      currentStatus = btn.getAttribute("data-status");
+      document.querySelectorAll(".statusToggle").forEach(function(b){
+        if (b.getAttribute("data-status")==="paid"){
+          b.className = "statusToggle flex-1 py-2.5 rounded-xl text-sm font-semibold pill " + (currentStatus==="paid" ? "chip-paid" : "");
+          if (currentStatus!=="paid"){ b.style.background="#EFECE1"; b.style.color="var(--ink-soft)"; }
+          else { b.style.background=""; b.style.color=""; }
+        } else {
+          b.className = "statusToggle flex-1 py-2.5 rounded-xl text-sm font-semibold pill " + (currentStatus==="udhari" ? "chip-udhari" : "");
+          if (currentStatus!=="udhari"){ b.style.background="#EFECE1"; b.style.color="var(--ink-soft)"; }
+          else { b.style.background=""; b.style.color=""; }
+        }
+      });
+    });
+  });
+
+  document.getElementById("logSaleBtn").addEventListener("click", function(){
+    var date = document.getElementById("saleDate").value || todayStr();
+    var customerId = document.getElementById("saleCustomer").value;
+    var productId = document.getElementById("saleProduct").value;
+    var qty = parseFloat(document.getElementById("saleQty").value);
+    var rate = parseFloat(document.getElementById("saleRate").value);
+
+    if (!customerId || !productId || !qty || qty<=0 || isNaN(rate) || rate<0){
+      toast("Fill quantity and rate to log this sale.");
+      return;
+    }
+    var p = productById(productId);
+    if (p && qty > p.stock){
+      toast("Only " + p.stock + " " + p.unit + " of " + p.name + " left in stock.");
+      return;
+    }
+    apiCall("POST", "/api/sales", { date:date, customerId:customerId, productId:productId, qty:qty, rate:rate, status: currentStatus }).then(function(res){
+      if (!res) return;
+      document.getElementById("saleQty").value = "";
+      computeLive();
+      refreshSaleSelects();
+      toast("Sale logged" + (currentStatus==="udhari" ? " as udhari." : "."));
+    });
+  });
+
+  document.getElementById("exportBtn").addEventListener("click", exportTodayRegister);
+
+  function buildTodayCSV(){
+    var today = todayStr();
+    var rows = state.sales.filter(function(s){ return s.date===today; });
+    var lines = ["Date,Customer,Product,Quantity,Rate,Total,Base Cost,Margin,Status"];
+    rows.forEach(function(s){
+      var c = customerById(s.customerId), p = productById(s.productId);
+      lines.push([
+        s.date,
+        '"'+(c?c.name:"")+'"',
+        '"'+(p?p.name:"")+'"',
+        s.qty, s.rate.toFixed(2), s.total.toFixed(2), s.cost.toFixed(2), s.margin.toFixed(2), s.status
+      ].join(","));
+    });
+    var totalSale = rows.reduce(function(a,s){return a+s.total;},0);
+    var totalMargin = rows.reduce(function(a,s){return a+s.margin;},0);
+    lines.push("");
+    lines.push("TOTAL,,,,," + totalSale.toFixed(2) + ",," + totalMargin.toFixed(2) + ",");
+    return lines.join("\n");
+  }
+
+  async function exportTodayRegister(){
+    var csv = buildTodayCSV();
+    var filename = "biopacq-register-" + todayStr() + ".csv";
+    try {
+      if (window.claude && typeof window.claude.use === "function"){
+        var downloads = await window.claude.use("downloads");
+        if (downloads){
+          try {
+            await downloads.save({ filename: filename, data: csv });
+            toast("Register export ready to save.");
+            return;
+          } catch(err){
+            console.error("download save failed", err);
+          }
+        }
+      }
+    } catch(e){ console.error(e); }
+    // Fallback: plain browser download (works outside published context)
+    try {
+      var blob = new Blob([csv], {type:"text/csv"});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast("Register exported.");
+    } catch(e){
+      toast("Couldn't export — copy shown below.");
+      console.error(e);
+    }
+  }
+
+  function renderTodayEntries(){
+    var today = todayStr();
+    var rows = state.sales.filter(function(s){ return s.date===today; });
+    document.getElementById("todayCount").textContent = rows.length + " entr" + (rows.length===1?"y":"ies");
+    var wrap = document.getElementById("todayEntries");
+    wrap.innerHTML = "";
+    if (rows.length===0){
+      wrap.innerHTML = '<div class="card p-4 text-sm text-center" style="color:var(--ink-soft);">Nothing logged for today yet.</div>';
+      return;
+    }
+    rows.forEach(function(s){
+      var c = customerById(s.customerId), p = productById(s.productId);
+      var row = document.createElement("div");
+      row.className = "card p-3.5";
+      row.innerHTML =
+        '<div class="flex items-center justify-between">' +
+          '<div class="text-sm font-semibold">' + (c?c.name:"") + '</div>' +
+          (s.status==="paid" ? '<span class="text-[10px] px-2 py-1 pill chip-paid">Paid</span>' : '<span class="text-[10px] px-2 py-1 pill chip-udhari">Udhari</span>') +
+        '</div>' +
+        '<div class="text-[12px] mt-0.5" style="color:var(--ink-soft);">' + (p?p.name:"") + ' · ' + s.qty + ' ' + (p?p.unit:"") + ' @ ₹' + s.rate.toFixed(2) + '</div>' +
+        '<div class="flex items-center justify-between mt-2">' +
+          '<div class="text-sm nums">Total <b>' + fmtMoney(s.total) + '</b></div>' +
+          '<div class="text-sm nums" style="color:var(--ok);">Margin ' + fmtMoney(s.margin) + '</div>' +
+        '</div>';
+      wrap.appendChild(row);
+    });
+  }
+
+  // ================= CUSTOMERS =================
+  document.getElementById("addCustomerBtn").addEventListener("click", function(){
+    var name = document.getElementById("newCustName").value.trim();
+    var phone = document.getElementById("newCustPhone").value.trim();
+    if (!name){ toast("Enter a business name."); return; }
+    apiCall("POST", "/api/customers", { name:name, phone:phone }).then(function(res){
+      if (!res) return;
+      document.getElementById("newCustName").value = "";
+      document.getElementById("newCustPhone").value = "";
+      toast("Added " + name + ".");
+    });
+  });
+
+  function renderCustomerList(){
+    var wrap = document.getElementById("customerList");
+    wrap.innerHTML = "";
+    state.customers.forEach(function(c){
+      var bal = customerBalance(c.id);
+      var row = document.createElement("button");
+      row.className = "card p-4 w-full text-left flex items-center justify-between";
+      row.innerHTML =
+        '<div class="flex items-center gap-3">' +
+          '<div class="hex w-10 h-10 flex items-center justify-center font-display text-sm" style="background:var(--forest); color:var(--cream);">' + c.name.charAt(0) + '</div>' +
+          '<div><div class="text-sm font-semibold">' + c.name + '</div><div class="text-[11px]" style="color:var(--ink-soft);">' + (c.phone||"No phone on file") + '</div></div>' +
+        '</div>' +
+        '<div class="text-right"><div class="font-display text-base nums" style="color:' + (bal>0 ? 'var(--rust)' : 'var(--ok)') + ';">' + fmtMoney(bal) + '</div><div class="text-[10px]" style="color:var(--ink-soft);">' + (bal>0?'outstanding':'settled') + '</div></div>';
+      row.addEventListener("click", function(){ openCustomerSheet(c.id); });
+      wrap.appendChild(row);
+    });
+  }
+
+  // ---- customer detail sheet ----
+  var sheetBackdrop = document.getElementById("sheetBackdrop");
+  var sheet = document.getElementById("customerSheet");
+  var activeSheetCustomerId = null;
+
+  function openCustomerSheet(customerId){
+    activeSheetCustomerId = customerId;
+    renderSheet();
+    sheetBackdrop.classList.add("open");
+    sheet.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeSheetFn(){
+    sheetBackdrop.classList.remove("open");
+    sheet.classList.remove("open");
+    document.body.style.overflow = "";
+    activeSheetCustomerId = null;
+  }
+  document.getElementById("closeSheet").addEventListener("click", closeSheetFn);
+  sheetBackdrop.addEventListener("click", closeSheetFn);
+
+  function renderSheet(){
+    var c = customerById(activeSheetCustomerId);
+    if (!c) return;
+    document.getElementById("sheetCustName").textContent = c.name;
+    document.getElementById("sheetCustPhone").textContent = c.phone || "No phone on file";
+    var bal = customerBalance(c.id);
+    var balBox = document.getElementById("sheetBalance");
+    balBox.style.background = bal>0 ? "var(--rust-tint)" : "var(--ok-tint)";
+    balBox.innerHTML = '<div class="text-xs" style="color:' + (bal>0?'var(--rust)':'var(--ok)') + ';">Current balance</div>' +
+      '<div class="font-display text-2xl nums" style="color:' + (bal>0?'var(--rust)':'var(--ok)') + ';">' + fmtMoney(bal) + '</div>';
+
+    var pricingWrap = document.getElementById("sheetPricing");
+    pricingWrap.innerHTML = "";
+    state.products.forEach(function(p){
+      var rate = (c.rates && c.rates[p.id] != null) ? c.rates[p.id] : p.baseCost;
+      var row = document.createElement("div");
+      row.className = "flex items-center justify-between gap-3 rounded-xl px-3 py-2.5";
+      row.style.background = "var(--cream)";
+      row.innerHTML =
+        '<div class="text-sm">' + p.name + '<div class="text-[10px]" style="color:var(--ink-soft);">base ₹' + p.baseCost.toFixed(2) + '</div></div>' +
+        '<input data-prod="' + p.id + '" type="number" step="0.01" min="0" value="' + rate + '" class="sheetRateInput w-24 rounded-lg px-2 py-1.5 text-sm text-right nums" />';
+      pricingWrap.appendChild(row);
+    });
+
+    var ledgerWrap = document.getElementById("sheetLedger");
+    var events = [];
+    state.sales.filter(function(s){return s.customerId===c.id;}).forEach(function(s){
+      var p = productById(s.productId);
+      events.push({ date:s.date, ts:s.date+s.id, html:
+        '<div class="flex items-center justify-between"><div class="text-sm">' + (p?p.name:"") + ' × ' + s.qty + '</div>' +
+        '<div class="text-sm font-semibold nums" style="color:' + (s.status==='udhari'?'var(--rust)':'var(--ok)') + ';">' + (s.status==='udhari'?'+':'') + fmtMoney(s.total) + '</div></div>' +
+        '<div class="text-[11px]" style="color:var(--ink-soft);">' + fmtDate(s.date) + ' · sale · ' + s.status + '</div>' });
+    });
+    state.payments.filter(function(p){return p.customerId===c.id;}).forEach(function(p){
+      events.push({ date:p.date, ts:p.date+p.id, html:
+        '<div class="flex items-center justify-between"><div class="text-sm">Payment received</div>' +
+        '<div class="text-sm font-semibold nums" style="color:var(--ok);">-' + fmtMoney(p.amount) + '</div></div>' +
+        '<div class="text-[11px]" style="color:var(--ink-soft);">' + fmtDate(p.date) + ' · payment</div>' });
+    });
+    events.sort(function(a,b){ return a.ts < b.ts ? 1 : -1; });
+    ledgerWrap.innerHTML = "";
+    if (events.length===0){
+      ledgerWrap.innerHTML = '<div class="card p-4 text-sm text-center" style="color:var(--ink-soft);">No transactions yet.</div>';
+    }
+    events.forEach(function(e){
+      var d = document.createElement("div");
+      d.className = "card p-3.5";
+      d.innerHTML = e.html;
+      ledgerWrap.appendChild(d);
+    });
+  }
+
+  document.getElementById("savePricingBtn").addEventListener("click", function(){
+    var c = customerById(activeSheetCustomerId);
+    if (!c) return;
+    var rates = {};
+    document.querySelectorAll(".sheetRateInput").forEach(function(inp){
+      var prodId = inp.getAttribute("data-prod");
+      var val = parseFloat(inp.value);
+      if (!isNaN(val) && val>=0) rates[prodId] = val;
+    });
+    apiCall("PUT", "/api/customers/" + encodeURIComponent(c.id) + "/rates", { rates: rates }).then(function(res){
+      if (!res) return;
+      toast("Pricing updated for " + c.name + ".");
+    });
+  });
+
+  // ================= EXCEL IMPORT / EXPORT =================
+  var dataSheetBackdrop = document.getElementById("dataSheetBackdrop");
+  var dataSheet = document.getElementById("dataSheet");
+  document.getElementById("openDataSheetBtn").addEventListener("click", function(){
+    document.getElementById("importResult").innerHTML = "";
+    document.getElementById("importFileName").textContent = "";
+    dataSheetBackdrop.classList.add("open");
+    dataSheet.classList.add("open");
+    document.body.style.overflow = "hidden";
+  });
+  function closeDataSheetFn(){
+    dataSheetBackdrop.classList.remove("open");
+    dataSheet.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+  document.getElementById("closeDataSheet").addEventListener("click", closeDataSheetFn);
+  dataSheetBackdrop.addEventListener("click", closeDataSheetFn);
+
+  function xlsxAvailable(){
+    if (typeof XLSX === "undefined"){
+      toast("Excel engine didn't load — check your internet connection and reload.");
+      return false;
+    }
+    return true;
+  }
+
+  async function saveBinaryFile(filename, bytes, mime){
+    try {
+      if (window.claude && typeof window.claude.use === "function"){
+        var downloads = await window.claude.use("downloads");
+        if (downloads){
+          try {
+            var result = await downloads.save({ filename: filename, data: bytes });
+            toast(result && result.status === "delivered" ? "File delivered." : "Saved " + filename);
+            return true;
+          } catch(err){
+            console.error("downloads.save failed, falling back", err);
+            if (err && err.code === "declined") { toast("Save cancelled."); return false; }
+          }
+        }
+      }
+    } catch(e){ console.error(e); }
+    try {
+      var blob = new Blob([bytes], {type: mime || "application/octet-stream"});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast("Downloaded " + filename);
+      return true;
+    } catch(e){
+      console.error(e);
+      toast("Couldn't save the file on this device.");
+      return false;
+    }
+  }
+
+  function buildWorkbookFromState(){
+    var wb = XLSX.utils.book_new();
+
+    var stockRows = state.stockLog.slice().sort(function(a,b){return a.date<b.date?1:-1;}).map(function(e){
+      var p = productById(e.productId);
+      return {
+        "Date Received (YYYY-MM-DD)": e.date,
+        "Product Name": p ? p.name : "",
+        "Quantity Added": e.qty,
+        "Base Cost Per Unit": e.cost
+      };
+    });
+    var wsStock = XLSX.utils.json_to_sheet(stockRows.length ? stockRows : [{"Date Received (YYYY-MM-DD)":"","Product Name":"","Quantity Added":"","Base Cost Per Unit":""}]);
+    XLSX.utils.book_append_sheet(wb, wsStock, "Stock");
+
+    var custRows = state.customers.map(function(c){
+      var row = { "Customer Name": c.name, "Phone": c.phone || "" };
+      state.products.forEach(function(p){
+        row["Rate - " + p.name] = (c.rates && c.rates[p.id] != null) ? c.rates[p.id] : p.baseCost;
+      });
+      return row;
+    });
+    var wsCust = XLSX.utils.json_to_sheet(custRows);
+    XLSX.utils.book_append_sheet(wb, wsCust, "Customers");
+
+    var saleRows = state.sales.slice().sort(function(a,b){return a.date<b.date?1:-1;}).map(function(s){
+      var c = customerById(s.customerId), p = productById(s.productId);
+      return {
+        "Date (YYYY-MM-DD)": s.date,
+        "Customer Name": c ? c.name : "",
+        "Product Name": p ? p.name : "",
+        "Quantity Sold": s.qty,
+        "Rate Applied": s.rate,
+        "Payment Status (Paid/Udhari)": s.status === "udhari" ? "Udhari" : "Paid"
+      };
+    });
+    var wsSales = XLSX.utils.json_to_sheet(saleRows.length ? saleRows : [{"Date (YYYY-MM-DD)":"","Customer Name":"","Product Name":"","Quantity Sold":"","Rate Applied":"","Payment Status (Paid/Udhari)":""}]);
+    XLSX.utils.book_append_sheet(wb, wsSales, "Daily Sales");
+
+    return wb;
+  }
+
+  document.getElementById("exportWorkbookBtn").addEventListener("click", async function(){
+    if (!xlsxAvailable()) return;
+    var wb = buildWorkbookFromState();
+    var out = XLSX.write(wb, {bookType:"xlsx", type:"array"});
+    await saveBinaryFile("BioPacq_Data_" + todayStr() + ".xlsx", out, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  });
+
+  document.getElementById("downloadTemplateBtn").addEventListener("click", async function(){
+    if (!xlsxAvailable()) return;
+    var wb = XLSX.utils.book_new();
+    var exStock = [
+      { "Date Received (YYYY-MM-DD)": todayStr(), "Product Name": state.products[0].name, "Quantity Added": 100, "Base Cost Per Unit": state.products[0].baseCost }
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exStock), "Stock");
+
+    var exCustRow = { "Customer Name": "New Customer", "Phone": "" };
+    state.products.forEach(function(p){ exCustRow["Rate - " + p.name] = p.baseCost; });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([exCustRow]), "Customers");
+
+    var exSale = [
+      { "Date (YYYY-MM-DD)": todayStr(), "Customer Name": state.customers[0].name, "Product Name": state.products[0].name, "Quantity Sold": 10, "Rate Applied": state.products[0].baseCost + 5, "Payment Status (Paid/Udhari)": "Paid" }
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exSale), "Daily Sales");
+
+    var out = XLSX.write(wb, {bookType:"xlsx", type:"array"});
+    await saveBinaryFile("BioPacq_Templates.xlsx", out, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  });
+
+  document.getElementById("importFileTrigger").addEventListener("click", function(){
+    document.getElementById("importFileInput").click();
+  });
+  document.getElementById("importFileInput").addEventListener("change", function(ev){
+    var file = ev.target.files && ev.target.files[0];
+    if (!file) return;
+    document.getElementById("importFileName").textContent = "Reading " + file.name + "…";
+    if (!xlsxAvailable()) { ev.target.value = ""; return; }
+    var reader = new FileReader();
+    reader.onerror = function(){
+      toast("Couldn't read that file.");
+      document.getElementById("importFileName").textContent = "";
+    };
+    reader.onload = function(e){
+      try {
+        var data = new Uint8Array(e.target.result);
+        var wb = XLSX.read(data, {type:"array"});
+        var rows = parseWorkbookToRows(wb); // client-side: sheet parsing + header/date detection only
+        apiCall("POST", "/api/import", rows).then(function(res){
+          document.getElementById("importFileName").textContent = res ? ("Imported " + file.name) : "";
+          if (res) renderImportReport(res.report);
+        });
+      } catch(err){
+        console.error(err);
+        document.getElementById("importFileName").textContent = "";
+        renderImportReport({ fatal: "That file couldn't be read as an Excel workbook. Make sure it's a real .xlsx/.xls file and try again." });
+      }
+      ev.target.value = "";
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  function normHeader(h){ return String(h||"").trim().toLowerCase(); }
+  function findKey(row, candidates){
+    var keys = Object.keys(row);
+    for (var i=0;i<keys.length;i++){
+      var nk = normHeader(keys[i]);
+      for (var j=0;j<candidates.length;j++){
+        if (nk.indexOf(candidates[j]) === 0 || nk === candidates[j]) return keys[i];
+      }
+    }
+    return null;
+  }
+  function parseExcelDate(v){
+    if (v == null || v === "") return null;
+    if (typeof v === "number"){
+      var d = XLSX.SSF.parse_date_code(v);
+      if (!d) return null;
+      return d.y + "-" + String(d.m).padStart(2,"0") + "-" + String(d.d).padStart(2,"0");
+    }
+    var s = String(v).trim();
+    var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) return m[1] + "-" + m[2].padStart(2,"0") + "-" + m[3].padStart(2,"0");
+    var dt = new Date(s);
+    if (!isNaN(dt.getTime())) return dt.toISOString().slice(0,10);
+    return null;
+  }
+  // Matching against products/customers, and all persistence, now happens
+  // server-side (see db.js importData) against the authoritative database.
+  // This function only extracts and normalizes rows from the workbook —
+  // sheet detection, header detection and Excel date parsing need the
+  // browser-side XLSX/XLSX.SSF library, so that part stays on the client.
+  function parseWorkbookToRows(wb){
+    var out = { stockRows: [], customerRows: [], saleRows: [] };
+    var sheetNames = wb.SheetNames;
+
+    var stockSheetName = sheetNames.find(function(n){ return /stock/i.test(n); });
+    var custSheetName = sheetNames.find(function(n){ return /customer/i.test(n); });
+    var salesSheetName = sheetNames.find(function(n){ return /sale|register/i.test(n); });
+
+    if (stockSheetName){
+      var stockRows = XLSX.utils.sheet_to_json(wb.Sheets[stockSheetName], {defval:null});
+      stockRows.forEach(function(row){
+        var dateKey = findKey(row, ["date"]);
+        var prodKey = findKey(row, ["product"]);
+        var qtyKey = findKey(row, ["quantity", "qty"]);
+        var costKey = findKey(row, ["base cost", "cost"]);
+        out.stockRows.push({
+          date: parseExcelDate(dateKey ? row[dateKey] : null) || todayStr(),
+          productName: prodKey ? row[prodKey] : null,
+          qty: qtyKey ? parseFloat(row[qtyKey]) : NaN,
+          cost: costKey ? parseFloat(row[costKey]) : NaN
+        });
+      });
+    }
+
+    if (custSheetName){
+      var custRows = XLSX.utils.sheet_to_json(wb.Sheets[custSheetName], {defval:null});
+      custRows.forEach(function(row){
+        var nameKey = findKey(row, ["customer name", "name"]);
+        var phoneKey = findKey(row, ["phone"]);
+        var rates = {};
+        Object.keys(row).forEach(function(k){
+          var nk = normHeader(k);
+          if (nk.indexOf("rate") === 0 || nk.indexOf("rate -") >= 0 || nk.indexOf("rate-") >= 0){
+            var prodPart = k.replace(/rate\s*-?\s*/i, "").trim();
+            var val = parseFloat(row[k]);
+            if (prodPart && !isNaN(val) && val>=0) rates[prodPart] = val;
+          }
+        });
+        out.customerRows.push({
+          name: nameKey ? row[nameKey] : null,
+          phone: phoneKey && row[phoneKey] != null ? String(row[phoneKey]) : "",
+          rates: rates
+        });
+      });
+    }
+
+    if (salesSheetName){
+      var saleRows = XLSX.utils.sheet_to_json(wb.Sheets[salesSheetName], {defval:null});
+      saleRows.forEach(function(row){
+        var dateKey = findKey(row, ["date"]);
+        var custKey = findKey(row, ["customer"]);
+        var prodKey = findKey(row, ["product"]);
+        var qtyKey = findKey(row, ["quantity", "qty"]);
+        var rateKey = findKey(row, ["rate"]);
+        var statusKey = findKey(row, ["payment status", "status"]);
+        var statusRaw = statusKey ? String(row[statusKey]||"").trim().toLowerCase() : "paid";
+        out.saleRows.push({
+          date: parseExcelDate(dateKey ? row[dateKey] : null) || todayStr(),
+          customerName: custKey ? row[custKey] : null,
+          productName: prodKey ? row[prodKey] : null,
+          qty: qtyKey ? parseFloat(row[qtyKey]) : NaN,
+          rate: rateKey ? parseFloat(row[rateKey]) : NaN,
+          status: (statusRaw.indexOf("udhari") === 0 || statusRaw.indexOf("credit") === 0) ? "udhari" : "paid"
+        });
+      });
+    }
+
+    return out;
+  }
+
+  function renderImportReport(report){
+    var wrap = document.getElementById("importResult");
+    wrap.innerHTML = "";
+    if (report.fatal){
+      var d = document.createElement("div");
+      d.className = "card p-3.5 text-sm";
+      d.style.borderColor = "var(--rust)";
+      d.innerHTML = '<span style="color:var(--rust); font-weight:600;">Import failed. </span>' + report.fatal;
+      wrap.appendChild(d);
+      return;
+    }
+    function section(title, ok, errors){
+      if (!ok && (!errors || errors.length===0)) return;
+      var box = document.createElement("div");
+      box.className = "card p-3.5";
+      var errHtml = (errors && errors.length) ? '<ul class="text-[11px] mt-2 space-y-0.5" style="color:var(--rust);">' + errors.slice(0,8).map(function(e){return '<li>• '+e+'</li>';}).join("") + (errors.length>8 ? '<li>…and '+(errors.length-8)+' more</li>' : '') + '</ul>' : '';
+      box.innerHTML = '<div class="text-sm font-semibold" style="color:var(--forest);">' + title + '</div><div class="text-sm mt-1">' + ok + '</div>' + errHtml;
+      wrap.appendChild(box);
+    }
+    section("Stock", report.stock.added + " row(s) added to stock.", report.stock.errors);
+    section("Customers", report.customers.added + " added, " + report.customers.updated + " updated.", report.customers.errors);
+    section("Daily Sales", report.sales.added + " sale(s) logged.", report.sales.errors);
+    var totalErrors = report.stock.errors.length + report.customers.errors.length + report.sales.errors.length;
+    toast("Import finished" + (totalErrors ? " with " + totalErrors + " row(s) skipped." : "."));
+  }
+
+  // ================= LEDGER TAB =================
+  document.getElementById("paymentDate").value = todayStr();
+  function refreshPaymentSelect(){ fillCustomerSelect(document.getElementById("paymentCustomer")); }
+  refreshPaymentSelect();
+
+  document.getElementById("recordPaymentBtn").addEventListener("click", function(){
+    var customerId = document.getElementById("paymentCustomer").value;
+    var date = document.getElementById("paymentDate").value || todayStr();
+    var amount = parseFloat(document.getElementById("paymentAmount").value);
+    if (!customerId || !amount || amount<=0){
+      toast("Enter an amount to record a payment.");
+      return;
+    }
+    var c = customerById(customerId);
+    var cName = c ? c.name : "";
+    apiCall("POST", "/api/payments", { customerId:customerId, date:date, amount:amount }).then(function(res){
+      if (!res) return;
+      document.getElementById("paymentAmount").value = "";
+      toast("Recorded ₹" + amount + " from " + cName + ".");
+    });
+  });
+
+  function renderLedgerBalances(){
+    var wrap = document.getElementById("ledgerBalances");
+    wrap.innerHTML = "";
+    state.customers.forEach(function(c){
+      var bal = customerBalance(c.id);
+      var row = document.createElement("div");
+      row.className = "card p-3.5 flex items-center justify-between";
+      row.innerHTML =
+        '<div class="text-sm font-semibold">' + c.name + '</div>' +
+        '<div class="font-display text-base nums" style="color:' + (bal>0?'var(--rust)':'var(--ok)') + ';">' + fmtMoney(bal) + '</div>';
+      wrap.appendChild(row);
+    });
+  }
+
+  function renderLedgerTimeline(){
+    var wrap = document.getElementById("ledgerTimeline");
+    var events = [];
+    state.sales.filter(function(s){return s.status==="udhari";}).forEach(function(s){
+      var c = customerById(s.customerId);
+      events.push({ ts:s.date+s.id, date:s.date, html:
+        '<div class="flex items-center justify-between"><div class="text-sm">' + (c?c.name:"") + ' — sold on credit</div>' +
+        '<div class="text-sm font-semibold nums" style="color:var(--rust);">+' + fmtMoney(s.total) + '</div></div>' +
+        '<div class="text-[11px]" style="color:var(--ink-soft);">' + fmtDate(s.date) + '</div>' });
+    });
+    state.payments.forEach(function(p){
+      var c = customerById(p.customerId);
+      events.push({ ts:p.date+p.id, date:p.date, html:
+        '<div class="flex items-center justify-between"><div class="text-sm">' + (c?c.name:"") + ' — payment received</div>' +
+        '<div class="text-sm font-semibold nums" style="color:var(--ok);">-' + fmtMoney(p.amount) + '</div></div>' +
+        '<div class="text-[11px]" style="color:var(--ink-soft);">' + fmtDate(p.date) + '</div>' });
+    });
+    events.sort(function(a,b){ return a.ts < b.ts ? 1 : -1; });
+    wrap.innerHTML = "";
+    if (events.length===0){
+      wrap.innerHTML = '<div class="card p-4 text-sm text-center" style="color:var(--ink-soft);">No udhari or payments recorded yet.</div>';
+    }
+    events.forEach(function(e){
+      var d = document.createElement("div");
+      d.className = "card p-3.5";
+      d.innerHTML = e.html;
+      wrap.appendChild(d);
+    });
+  }
+
+  // ================= RENDER ALL =================
+  function renderAll(){
+    renderDashboard();
+    renderStockHistory();
+    refreshStockSelect();
+    refreshSaleSelects();
+    renderTodayEntries();
+    renderCustomerList();
+    refreshPaymentSelect();
+    renderLedgerBalances();
+    renderLedgerTimeline();
+    if (activeSheetCustomerId) renderSheet();
+  }
+
+  renderAll();
+  computeLive();
+  loadStateFromServer();
+  connectLiveSync();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "biopacq-server",
+  "version": "1.0.0",
+  "description": "BioPacq wholesale business register - Express + SQLite + WebSocket live sync",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "better-sqlite3": "^11.3.0",
+    "ws": "^8.18.0",
+    "razorpay": "^2.9.4",
+    "dotenv": "^16.4.5"
+  }
+}

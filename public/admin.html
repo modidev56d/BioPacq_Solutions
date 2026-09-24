@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>BioPacq — Admin Orders</title>
+<meta name="theme-color" content="#16281A" />
+<link rel="manifest" href="admin-manifest.json" />
+<link rel="apple-touch-icon" href="icons/admin-192.png" />
+<link rel="icon" href="icons/admin-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --forest:#1E3523; --forest-2:#16281A; --forest-tint:#3C5A44;
+    --cream:#EFECE1; --paper:#F8F6EF; --cream-line:#DCD6C2;
+    --gold:#AD8A50; --gold-deep:#8C6D3A; --rust:#9B4A34; --rust-tint:#F1DED5;
+    --ok:#43684A; --ok-tint:#DCE7DA; --ink:#1E3523; --ink-soft:#5B6B5D;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;} html,body{height:100%;}
+  body{margin:0;background:var(--forest-2);color:var(--paper);font-family:'Inter',ui-sans-serif,system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  .font-display{font-family:'Fraunces',serif;}
+  .nums{font-variant-numeric:tabular-nums;}
+  ::-webkit-scrollbar{width:0;height:0;}
+
+  header.top{position:sticky;top:0;z-index:20;background:var(--forest-2);
+    padding:calc(14px + env(safe-area-inset-top,0px)) 16px 12px;display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid rgba(255,255,255,.08);}
+  header.top .brand{display:flex;align-items:center;gap:10px;}
+  header.top .hex{width:28px;height:28px;background:var(--gold);clip-path:polygon(25% 6%,75% 6%,100% 50%,75% 94%,25% 94%,0% 50%);}
+  header.top h1{font-family:'Fraunces',serif;font-size:18px;margin:0;font-weight:600;}
+  header.top .sub{font-size:11px;color:var(--cream-line);opacity:.7;}
+  .ledger-link{background:var(--forest-tint);color:var(--paper);text-decoration:none;font-size:12px;font-weight:700;padding:8px 12px;border-radius:999px;}
+
+  main{max-width:720px;margin:0 auto;padding:14px 12px 60px;}
+
+  .tabs{display:flex;gap:6px;background:rgba(255,255,255,.06);border-radius:999px;padding:4px;margin-bottom:14px;}
+  .tab{flex:1;text-align:center;padding:9px 8px;border-radius:999px;font-size:13px;font-weight:700;color:var(--cream-line);cursor:pointer;position:relative;}
+  .tab.active{background:var(--gold);color:var(--forest-2);}
+  .tab .count{position:absolute;top:-6px;right:6px;background:var(--rust);color:#fff;font-size:10px;font-weight:800;border-radius:999px;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 4px;}
+
+  .panel{display:none;} .panel.active{display:block;}
+
+  .order-card{background:var(--paper);color:var(--ink);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 4px 14px rgba(0,0,0,.2);}
+  .order-card.urgent{outline:2px solid var(--rust);}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+  .oid{font-size:11px;color:var(--ink-soft);}
+  .cust{font-weight:700;font-size:15px;}
+  .phone{font-size:12px;color:var(--ink-soft);}
+  .badge{font-size:11px;font-weight:800;border-radius:999px;padding:4px 10px;white-space:nowrap;}
+  .b-pending_review{background:#FBEFD8;color:#8C6D3A;} .b-accepted,.b-preparing,.b-ready,.b-out_for_delivery{background:var(--ok-tint);color:var(--ok);}
+  .b-delivered{background:var(--forest);color:#fff;} .b-rejected,.b-expired,.b-cancelled{background:var(--rust-tint);color:var(--rust);}
+  .items{font-size:13px;margin:8px 0;line-height:1.5;}
+  .items .li{display:flex;justify-content:space-between;}
+  .amount-row{display:flex;justify-content:space-between;align-items:center;font-family:'Fraunces',serif;font-size:17px;font-weight:700;margin:10px 0;border-top:1px dashed var(--cream-line);padding-top:10px;}
+  .pay-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--cream);color:var(--ink-soft);}
+  .countdown{text-align:center;font-family:'Fraunces',serif;font-size:26px;font-weight:800;color:var(--rust);margin:6px 0;}
+  .btn-row{display:flex;gap:8px;}
+  .btn{flex:1;border:none;border-radius:10px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;}
+  .btn-accept{background:var(--ok);color:#fff;}
+  .btn-reject{background:var(--rust);color:#fff;}
+  .btn-next{background:var(--forest);color:#fff;}
+  .progress{display:flex;gap:4px;margin:10px 0 6px;}
+  .progress div{flex:1;height:6px;border-radius:4px;background:var(--cream-line);}
+  .progress div.done{background:var(--ok);}
+  .empty{text-align:center;padding:50px 20px;color:var(--cream-line);opacity:.7;}
+  .empty .hex{width:52px;height:52px;background:var(--gold);opacity:.3;clip-path:polygon(25% 6%,75% 6%,100% 50%,75% 94%,25% 94%,0% 50%);margin:0 auto 14px;}
+  .stat-row{display:flex;gap:10px;margin-bottom:16px;}
+  .stat{flex:1;background:rgba(255,255,255,.06);border-radius:14px;padding:12px;text-align:center;}
+  .stat .n{font-family:'Fraunces',serif;font-size:22px;font-weight:700;}
+  .stat .l{font-size:11px;color:var(--cream-line);opacity:.75;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="hex"></div>
+    <div><h1>BioPacq Admin</h1><div class="sub">Live incoming orders</div></div>
+  </div>
+  <a class="ledger-link" href="index.html">Full Ledger →</a>
+</header>
+
+<main>
+  <div class="stat-row">
+    <div class="stat"><div class="n nums" id="statPending">0</div><div class="l">Awaiting you</div></div>
+    <div class="stat"><div class="n nums" id="statActive">0</div><div class="l">In progress</div></div>
+    <div class="stat"><div class="n nums" id="statToday">₹0</div><div class="l">Accepted today</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="incoming">Incoming<span class="count" id="cntIncoming" style="display:none;">0</span></div>
+    <div class="tab" data-tab="active">In Progress</div>
+    <div class="tab" data-tab="history">History</div>
+  </div>
+
+  <div class="panel active" id="panel-incoming"></div>
+  <div class="panel" id="panel-active"></div>
+  <div class="panel" id="panel-history"></div>
+</main>
+
+<script>
+  const API = { get:(u)=>fetch(u).then(r=>r.json()), post:(u,b)=>fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b||{})}).then(async r=>({status:r.status,data:await r.json()})), put:(u,b)=>fetch(u,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(b||{})}).then(async r=>({status:r.status,data:await r.json()})) };
+  let state = { orders:[] };
+  let knownIds = new Set();
+  const PIPELINE = ["accepted","preparing","ready","out_for_delivery","delivered"];
+  const NEXT_LABEL = { accepted:"Start Preparing", preparing:"Mark Ready", ready:"Out for Delivery", out_for_delivery:"Mark Delivered" };
+  const NEXT_STATUS = { accepted:"preparing", preparing:"ready", ready:"out_for_delivery", out_for_delivery:"delivered" };
+
+  function beep(){
+    try{
+      const ctx = new (window.AudioContext||window.webkitAudioContext)();
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type="sine"; o.frequency.value=880; o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.15, ctx.currentTime);
+      o.start(); o.stop(ctx.currentTime+0.18);
+    }catch(e){}
+  }
+
+  function itemsHtml(o){
+    return `<div class="items">${o.items.map(it=>`<div class="li"><span>${it.qty} ${it.unit||""} × ${it.name}</span><span class="nums">₹${it.total.toFixed(2)}</span></div>`).join("")}</div>`;
+  }
+
+  function renderIncoming(){
+    const wrap = document.getElementById("panel-incoming");
+    const list = state.orders.filter(o=>o.status==="pending_review");
+    document.getElementById("statPending").textContent = list.length;
+    const cnt = document.getElementById("cntIncoming");
+    cnt.style.display = list.length ? "flex" : "none"; cnt.textContent = list.length;
+    if(list.length===0){ wrap.innerHTML='<div class="empty"><div class="hex"></div>No new orders right now.</div>'; return; }
+    wrap.innerHTML="";
+    list.forEach(o=>{
+      const deadline = new Date(o.acceptDeadline).getTime();
+      const urgent = deadline - Date.now() < 120000;
+      const card = document.createElement("div"); card.className="order-card"+(urgent?" urgent":"");
+      card.innerHTML = `
+        <div class="head">
+          <div><div class="cust">${o.customerName}</div><div class="phone">${o.customerPhone||""} · #${o.id.slice(-6).toUpperCase()}</div></div>
+          <span class="pay-tag">${o.paymentMethod==="online"?"PAID ONLINE":"CREDIT"}</span>
+        </div>
+        ${itemsHtml(o)}
+        <div class="amount-row"><span>Total</span><span class="nums">₹${o.amount.toFixed(2)}</span></div>
+        <div class="countdown nums" data-deadline="${o.acceptDeadline}">--:--</div>
+        <div class="btn-row">
+          <button class="btn btn-reject" data-act="reject" data-id="${o.id}">Reject</button>
+          <button class="btn btn-accept" data-act="accept" data-id="${o.id}">Accept</button>
+        </div>`;
+      wrap.appendChild(card);
+    });
+    wrap.querySelectorAll('[data-act="accept"]').forEach(b=>b.addEventListener("click", async ()=>{
+      b.disabled=true;
+      const res = await API.post(`/api/orders/${b.dataset.id}/accept`);
+      if(res.data.error) alert(res.data.error);
+      b.disabled=false;
+    }));
+    wrap.querySelectorAll('[data-act="reject"]').forEach(b=>b.addEventListener("click", async ()=>{
+      const reason = prompt("Reason for rejecting (optional):","Out of stock");
+      if(reason===null) return;
+      b.disabled=true;
+      const res = await API.post(`/api/orders/${b.dataset.id}/reject`, {reason});
+      if(res.data.error) alert(res.data.error);
+      b.disabled=false;
+    }));
+  }
+
+  function renderActive(){
+    const wrap = document.getElementById("panel-active");
+    const list = state.orders.filter(o=>PIPELINE.includes(o.status) && o.status!=="delivered");
+    document.getElementById("statActive").textContent = list.length;
+    if(list.length===0){ wrap.innerHTML='<div class="empty"><div class="hex"></div>Nothing in progress.</div>'; return; }
+    wrap.innerHTML="";
+    list.forEach(o=>{
+      const idx = PIPELINE.indexOf(o.status);
+      const card = document.createElement("div"); card.className="order-card";
+      card.innerHTML = `
+        <div class="head">
+          <div><div class="cust">${o.customerName}</div><div class="phone">${o.customerPhone||""} · #${o.id.slice(-6).toUpperCase()}</div></div>
+          <span class="badge b-${o.status}">${o.status.replace(/_/g," ")}</span>
+        </div>
+        ${itemsHtml(o)}
+        <div class="amount-row"><span>Total</span><span class="nums">₹${o.amount.toFixed(2)}</span></div>
+        <div class="progress">${PIPELINE.map((s,i)=>`<div class="${i<=idx?'done':''}"></div>`).join("")}</div>
+        <div class="btn-row"><button class="btn btn-next" data-id="${o.id}" data-next="${NEXT_STATUS[o.status]}">${NEXT_LABEL[o.status]}</button></div>`;
+      wrap.appendChild(card);
+    });
+    wrap.querySelectorAll(".btn-next").forEach(b=>b.addEventListener("click", async ()=>{
+      b.disabled=true;
+      const res = await API.put(`/api/orders/${b.dataset.id}/status`, { status: b.dataset.next });
+      if(res.data.error) alert(res.data.error);
+      b.disabled=false;
+    }));
+  }
+
+  function renderHistory(){
+    const wrap = document.getElementById("panel-history");
+    const list = state.orders.filter(o=>["delivered","rejected","expired","cancelled"].includes(o.status)).slice(0,40);
+    let today = 0;
+    const todayStr = new Date().toISOString().slice(0,10);
+    state.orders.forEach(o=>{ if(o.status!=="pending_review" && o.status!=="rejected" && o.status!=="expired" && o.status!=="cancelled" && o.placedAt.slice(0,10)===todayStr) today += o.amount; });
+    document.getElementById("statToday").textContent = "₹" + today.toFixed(0);
+    if(list.length===0){ wrap.innerHTML='<div class="empty"><div class="hex"></div>No completed orders yet.</div>'; return; }
+    wrap.innerHTML="";
+    list.forEach(o=>{
+      const card = document.createElement("div"); card.className="order-card";
+      card.innerHTML = `
+        <div class="head">
+          <div><div class="cust">${o.customerName}</div><div class="phone">${o.customerPhone||""} · #${o.id.slice(-6).toUpperCase()} · ${new Date(o.placedAt).toLocaleString()}</div></div>
+          <span class="badge b-${o.status}">${o.status.replace(/_/g," ")}</span>
+        </div>
+        ${itemsHtml(o)}
+        <div class="amount-row"><span>Total</span><span class="nums">₹${o.amount.toFixed(2)}</span></div>
+        ${o.note?`<div style="font-size:12px;color:var(--rust);">${o.note}</div>`:""}`;
+      wrap.appendChild(card);
+    });
+  }
+
+  function renderAll(){ renderIncoming(); renderActive(); renderHistory(); }
+
+  setInterval(()=>{
+    document.querySelectorAll(".countdown").forEach(el=>{
+      const deadline = new Date(el.dataset.deadline).getTime();
+      const diff = Math.max(0, deadline-Date.now());
+      const m=Math.floor(diff/60000), s=Math.floor((diff%60000)/1000);
+      el.textContent = diff>0 ? `${m}:${String(s).padStart(2,"0")} left to respond` : "Expiring…";
+    });
+  },1000);
+
+  document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById("panel-"+t.dataset.tab).classList.add("active");
+  }));
+
+  function applyState(s){
+    const newPending = s.orders.filter(o=>o.status==="pending_review" && !knownIds.has(o.id));
+    if(newPending.length && knownIds.size>0) beep();
+    s.orders.forEach(o=>knownIds.add(o.id));
+    state = s; renderAll();
+  }
+  function loadState(){ API.get("/api/state").then(applyState); }
+  function connectWS(){
+    const proto = location.protocol==="https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(proto+"//"+location.host+"/ws");
+    ws.onmessage = (ev)=>{ const msg=JSON.parse(ev.data); if(msg.type==="state") applyState(msg.payload); };
+    ws.onclose = ()=> setTimeout(connectWS, 1500);
+  }
+  loadState(); connectWS();
+
+  if("serviceWorker" in navigator){ navigator.serviceWorker.register("admin-sw.js").catch(()=>{}); }
+</script>
+</body>
+</html>
