@@ -1,5 +1,17 @@
+const fs = require('fs');
+const path = require('path');
+
+// Replace './your-database-folder' with the folder name you are using in your connection string
+// For example, if your database path is 'data/database.db', use 'data' here
+const dbDir = path.dirname(path.join(__dirname, 'data/database.db')); 
+
+if (!fs.existsSync(dbDir)){
+    fs.mkdirSync(dbDir, { recursive: true });
+}
+
 // db.js — SQLite data layer for BioPacq.
 // All persistent state lives in ./data/biopacq.db (created automatically on first run).
+
 
 const path = require("path");
 const Database = require("better-sqlite3");
